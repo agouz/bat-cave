@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Bat Cave"/>
+<meta name="theme-color" content="#07080A"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1"/>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1"/>
+<link rel="manifest" href="manifest.json?v=1"/>
+<title>The Bat Cave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Spectral:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#07080A; --stone:#11141A; --stone-2:#181C24; --line:#2A313C;
+  --text:#ECE6D6; --dim:#8E9199; --gold:#D9A441; --ember:#F2C14E;
+  --trip:#4FA3A5; --album:#C8553D; --bad:#E5694F;
+  --display:'Big Shoulders Display','Arial Narrow',sans-serif;
+  --body:'Spectral',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--body);font-size:17px;}
+body{overflow-x:hidden;}
+button{font-family:inherit;color:inherit;}
+
+/* ---------- cave atmosphere ---------- */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:
+    radial-gradient(1100px 700px at 50% -12%,rgba(217,164,65,.17),transparent 62%),
+    radial-gradient(800px 600px at 110% 110%,rgba(79,163,165,.10),transparent 60%),
+    radial-gradient(700px 600px at -20% 100%,rgba(200,85,61,.08),transparent 60%),
+    linear-gradient(180deg,#0B0D11 0%,#07080A 60%,#050607 100%);}
+#bg .rock{position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");}
+#bg .beam{position:absolute;left:50%;top:-10%;width:130vmax;height:120vmax;transform:translateX(-50%);
+  background:conic-gradient(from 180deg at 50% 0%,transparent 163deg,rgba(242,193,78,.07) 175deg,rgba(242,193,78,.12) 180deg,rgba(242,193,78,.07) 185deg,transparent 197deg);
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 80%);mask-image:linear-gradient(180deg,#000 0%,transparent 80%);
+  animation:beam 9s ease-in-out infinite alternate;}
+@keyframes beam{from{opacity:.55;}to{opacity:1;}}
+#bg .mist{position:absolute;left:-30%;width:160%;height:38vh;bottom:-6vh;opacity:.5;filter:blur(24px);
+  background:radial-gradient(closest-side,rgba(120,140,160,.20),transparent);animation:drift 26s linear infinite alternate;}
+#bg .mist.b{bottom:12vh;opacity:.28;animation-duration:38s;animation-direction:alternate-reverse;}
+@keyframes drift{from{transform:translateX(-8%);}to{transform:translateX(8%);}}
+#bg .vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.65) 100%);}
+.flit{position:absolute;top:18%;left:-12%;width:26px;height:12px;opacity:0;color:#000;animation:flit 19s linear infinite;}
+.flit.two{top:30%;animation-delay:9s;animation-duration:24s;width:20px;}
+@keyframes flit{0%{transform:translate(0,0);opacity:0;}6%{opacity:.8;}50%{transform:translate(60vw,-6vh);}94%{opacity:.8;}100%{transform:translate(125vw,8vh);opacity:0;}}
+
+/* ---------- login gate ---------- */
+#gate{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;padding:calc(28px + env(safe-area-inset-top)) 22px calc(28px + env(safe-area-inset-bottom));text-align:center;}
+.emblem{width:min(46vw,190px);height:auto;margin-bottom:6px;animation:sway 7s ease-in-out infinite,fadein 1.2s .1s both;transform-origin:50% 0;
+  filter:drop-shadow(0 8px 22px rgba(217,164,65,.28));}
+@keyframes sway{0%,100%{transform:rotate(-1.6deg);}50%{transform:rotate(1.6deg);}}
+@keyframes fadein{from{opacity:0;}to{opacity:1;}}
+.rune{width:min(88vw,540px);color:var(--ember);margin:18px 0 10px;filter:drop-shadow(0 0 10px rgba(242,193,78,.55)) drop-shadow(0 0 28px rgba(217,164,65,.35));
+  animation:wipe 3.2s .5s cubic-bezier(.6,.05,.2,1) both;}
+.rune svg{display:block;width:100%;height:auto;}
+@keyframes wipe{from{clip-path:inset(-60px 100% -60px -60px);opacity:.2;}to{clip-path:inset(-60px -60px -60px -60px);opacity:1;}}
+.caption{font-family:var(--display);font-weight:700;letter-spacing:.38em;font-size:13px;color:var(--dim);text-transform:uppercase;
+  animation:fadein 1.4s 2.6s both;padding-left:.38em;}
+.cta{margin-top:34px;animation:rise .8s 2.9s both;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:56px;padding:0 30px;border-radius:14px;cursor:pointer;
+  background:linear-gradient(180deg,#E8B753,#C9922F);color:#16110A;border:none;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.08em;
+  text-transform:uppercase;box-shadow:0 10px 30px rgba(217,164,65,.25),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .12s,box-shadow .2s;}
+.btn:active{transform:scale(.95);box-shadow:0 4px 14px rgba(217,164,65,.2);}
+.btn svg{width:22px;height:22px;fill:currentColor;}
+.btn.ghost{background:transparent;color:var(--dim);border:1px solid var(--line);box-shadow:none;font-size:16px;min-height:44px;padding:0 18px;letter-spacing:.1em;}
+.gate-msg{max-width:320px;line-height:1.5;color:var(--dim);margin-top:16px;font-size:15px;}
+.gate-msg.err{color:var(--bad);}
+.spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes rise{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+
+/* ---------- hub ---------- */
+#app{display:none;position:relative;z-index:5;min-height:100%;flex-direction:column;
+  padding:calc(18px + env(safe-area-inset-top)) 18px calc(22px + env(safe-area-inset-bottom));}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;animation:rise .6s both;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand svg{width:34px;height:34px;}
+.brand h1{font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.12em;text-transform:uppercase;line-height:1;}
+.view{display:none;flex:1;flex-direction:column;}
+.view.on{display:flex;animation:slide .35s cubic-bezier(.2,.8,.2,1) both;}
+.view.back.on{animation-name:slideback;}
+@keyframes slide{from{opacity:0;transform:translateX(26px);}to{opacity:1;transform:none;}}
+@keyframes slideback{from{opacity:0;transform:translateX(-26px);}to{opacity:1;transform:none;}}
+.tiles{flex:1;display:flex;flex-direction:column;gap:16px;justify-content:flex-end;min-height:0;}
+.tile{--c:var(--gold);position:relative;flex:1;min-height:150px;max-height:300px;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:6px;
+  text-align:left;border-radius:22px;padding:24px 24px 22px;cursor:pointer;overflow:hidden;border:1px solid var(--line);
+  background:
+    radial-gradient(420px 220px at 100% 0%,color-mix(in srgb,var(--c) 30%,transparent),transparent 70%),
+    linear-gradient(160deg,var(--stone-2),var(--stone));
+  transition:transform .14s,border-color .2s,box-shadow .2s;animation:rise .6s both;box-shadow:0 14px 34px rgba(0,0,0,.45);}
+.tile:nth-child(1){animation-delay:.12s;} .tile:nth-child(2){animation-delay:.24s;} .tile:nth-child(3){animation-delay:.36s;} .tile:nth-child(4){animation-delay:.48s;}
+.tile:active{transform:scale(.97);border-color:var(--c);box-shadow:0 6px 18px rgba(0,0,0,.5),0 0 0 1px var(--c);}
+.tile .ic{position:absolute;right:20px;top:20px;width:56px;height:56px;color:var(--c);opacity:.95;}
+.tile .ic svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.tile .name{font-family:var(--display);font-weight:800;font-size:clamp(40px,12vw,56px);line-height:.95;letter-spacing:.03em;text-transform:uppercase;}
+.tile .sub{color:var(--dim);font-size:16px;}
+.tile .go{position:absolute;right:22px;bottom:20px;font-size:30px;color:var(--c);transition:transform .2s;}
+.tile:active .go{transform:translateX(5px);}
+.signout{align-self:center;margin-top:20px;animation:rise .6s .6s both;}
+.sub-head{margin:4px 2px 18px;animation:rise .5s both;}
+.sub-head .kicker{font-family:var(--display);font-weight:700;letter-spacing:.3em;font-size:13px;color:var(--dim);text-transform:uppercase;}
+.sub-head h2{font-family:var(--display);font-weight:800;font-size:clamp(44px,13vw,64px);line-height:.95;text-transform:uppercase;letter-spacing:.03em;margin-top:6px;}
+.back-bar{margin-top:20px;display:flex;}
+.back-btn{flex:1;min-height:64px;border-radius:18px;background:var(--stone-2);border:1px solid var(--line);font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .12s;}
+.back-btn:active{transform:scale(.97);}
+.note{padding:46px 12px;text-align:center;color:var(--dim);line-height:1.6;}
+#toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--stone-2);border:1px solid var(--line);padding:12px 18px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;font-size:15px;}
+#toast.on{opacity:1;}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;}}
+</style>
+</head>
+<body>
+
+<div id="bg">
+  <div class="rock"></div><div class="beam"></div>
+  <div class="mist"></div><div class="mist b"></div>
+  <svg class="flit" viewBox="0 0 30 14" fill="currentColor"><path d="M15 6c-2-3-5-5-9-4 2 1 3 3 3 5-2-1-5-1-8 1 3 0 5 1 6 3 1-2 3-3 5-1 1-2 2-2 3 0 2-2 4-1 5 1 1-2 3-3 6-3-3-2-6-2-8-1 0-2 1-4 3-5-4-1-7 1-9 4z"/></svg>
+  <svg class="flit two" viewBox="0 0 30 14" fill="currentColor"><path d="M15 6c-2-3-5-5-9-4 2 1 3 3 3 5-2-1-5-1-8 1 3 0 5 1 6 3 1-2 3-3 5-1 1-2 2-2 3 0 2-2 4-1 5 1 1-2 3-3 6-3-3-2-6-2-8-1 0-2 1-4 3-5-4-1-7 1-9 4z"/></svg>
+  <div class="vig"></div>
+</div>
+
+<!-- ============ LOGIN ============ -->
+<main id="gate"><div class="spinner"></div></main>
+
+<!-- ============ HUB ============ -->
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#D9A441" stroke-width="3"/><circle cx="20" cy="20" r="16" fill="none" stroke="#F2C14E" stroke-width="1" opacity=".6"/></svg>
+      <h1>Bat Cave</h1>
+    </div>
+  </header>
+  <section class="view on" id="v-home"><div class="tiles" id="homeTiles"></div></section>
+  <section class="view" id="v-sub">
+    <div class="sub-head"><div class="kicker">The Bat Cave</div><h2 id="subTitle"></h2></div>
+    <div class="tiles" id="subTiles"></div>
+    <div class="back-bar"><button class="back-btn" onclick="goHome()"><span>&#8592;</span> Back</button></div>
+  </section>
+  <button class="btn ghost signout" onclick="signOut()">Sign out</button>
+</div>
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL="https://kkdwsbbvgvklxqqumcdw.supabase.co";
+const ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZHdzYmJ2Z3ZrbHhxcXVtY2R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MTk0NzYsImV4cCI6MjA5NzQ5NTQ3Nn0.EQlC5F3LzU0uMsRlBcgBPxZg_vWiNXuRIo1J9urTo_Q";
+const OWNER="agouz";
+const sb=supabase.createClient(SUPABASE_URL,ANON_KEY);
+let LINKS=[], booting=false;
+
+/* Tengwar rendering of the phrase, as outlines (no font file shipped) */
+const RUNE_SVG='<svg viewBox="-194 -2498 17834 4773" role="img" aria-label="One app to rule them all, written in Tengwar"><path fill="currentColor" d="M-174 -675Q-174 -705 -119 -761Q-16 -862 135 -895Q174 -903 214 -906H243Q330 -906 368 -825Q389 -781 389 -723Q389 -677 373 -617Q369 -604 369 -596L392 -619Q548 -772 700 -843Q797 -889 877 -889Q1057 -889 1135 -743Q1171 -673 1171 -610Q1171 -503 1098 -375Q1034 -263 926 -172Q913 -162 913 -160Q913 -157 991 -157Q1217 -157 1333 -239L1395 -286Q1416 -298 1436 -298H1440Q1453 -298 1453 -281Q1451 -249 1389 -191Q1268 -81 1081 -37Q983 -13 877 -13Q811 -13 586 -36Q515 -42 451 -45Q427 -46 396 -46Q200 -46 15 8Q-12 16 -21 16Q-36 16 -36 3Q-36 -20 2 -63Q28 -91 37 -105Q122 -231 182 -431Q215 -538 215 -590Q215 -689 154 -729Q128 -747 94 -747Q-15 -747 -90 -695Q-131 -667 -143 -664Q-150 -662 -158 -662Q-174 -662 -174 -675ZM171 -148 305 -173Q408 -189 521 -189L689 -182Q839 -182 903 -246Q987 -333 996 -447Q997 -459 997 -470Q997 -583 914 -660Q853 -715 769 -727Q757 -729 735 -729Q655 -729 556 -665Q477 -614 411 -533Q341 -447 242 -269Q199 -189 171 -148ZM1087 -675Q1087 -705 1142 -761Q1245 -862 1396 -895Q1435 -903 1475 -906H1504Q1591 -906 1629 -825Q1650 -781 1650 -723Q1650 -674 1639 -634Q1638 -630 1637 -628Q1639 -628 1691 -678Q1882 -863 2037 -886Q2051 -888 2076 -888Q2207 -888 2286 -771Q2337 -696 2348 -599Q2470 -740 2603 -820Q2717 -889 2810 -889Q2915 -889 2993 -804Q3055 -738 3076 -637Q3083 -604 3083 -564Q3083 -387 2951 -220Q2843 -82 2702 -19Q2624 16 2556 16Q2430 16 2408 -62Q2404 -75 2404 -90Q2404 -142 2447 -183Q2486 -221 2540 -221Q2587 -221 2620 -187Q2648 -158 2660 -152Q2678 -143 2702 -143Q2774 -143 2813 -178Q2826 -189 2837 -204Q2908 -306 2908 -430Q2908 -579 2806 -670Q2779 -695 2752 -708Q2710 -729 2665 -729Q2511 -729 2368 -481Q2352 -453 2296 -343Q2272 -296 2241 -252Q2158 -136 2046 -61Q1955 1 1866 14Q1853 16 1825 16Q1688 16 1673 -71Q1671 -80 1671 -90Q1671 -141 1715 -184Q1753 -221 1804 -221Q1850 -221 1888 -185Q1919 -155 1934 -149Q1947 -144 1962 -144H1971Q2060 -144 2104 -205Q2116 -220 2132 -251Q2175 -338 2175 -430Q2175 -552 2104 -640Q2075 -676 2037 -698Q1986 -729 1930 -729Q1787 -729 1628 -486Q1590 -428 1486 -241Q1442 -161 1418 -129Q1326 -6 1258 14Q1249 16 1241 16Q1225 16 1225 3Q1225 -17 1276 -78Q1293 -98 1298 -106Q1384 -234 1444 -435Q1476 -540 1476 -590Q1476 -689 1415 -729Q1389 -747 1355 -747Q1246 -747 1171 -695Q1130 -667 1118 -664Q1111 -662 1103 -662Q1087 -662 1087 -675ZM1852 -750Q1852 -773 1891 -812Q1909 -829 1931 -844Q1933 -846 2224 -1006Q2593 -1207 2685 -1263Q2881 -1384 2948 -1479Q2961 -1498 2971 -1518Q2996 -1567 2996 -1614Q2996 -1663 2963 -1715Q2909 -1797 2802 -1797Q2734 -1797 2705 -1772Q2699 -1767 2696 -1761Q2681 -1732 2681 -1701Q2681 -1637 2733 -1603Q2757 -1587 2782 -1586Q2803 -1585 2828 -1601Q2840 -1609 2852.0 -1609.0Q2864 -1609 2864 -1598Q2864 -1566 2806 -1520Q2735 -1464 2674 -1464Q2601 -1464 2566 -1527Q2548 -1560 2548 -1599Q2548 -1694 2645 -1792Q2737 -1884 2844 -1911Q2876 -1919 2905 -1919Q3028 -1919 3091 -1838Q3130 -1787 3130 -1717Q3130 -1511 2778 -1257Q2676 -1184 2551 -1112L2165 -900Q1883 -745 1876 -743Q1868 -741 1863 -741Q1852 -741 1852 -750ZM2124 2241Q2124 2213 2186 2152L2372 1974L2396 1951Q3089 1258 3679 182L3792 -31Q3839 -109 3916 -312Q3997 -523 3997 -595Q3997 -669 3956 -713Q3924 -746 3874 -746Q3765 -746 3690 -695Q3650 -667 3639 -664Q3631 -662 3623 -662Q3607 -662 3607 -675Q3607 -704 3661 -759Q3761 -861 3907 -894Q3949 -904 3993 -906H4011Q4089 -906 4125 -866Q4157 -831 4169 -763Q4171 -754 4171 -731Q4171 -674 4147 -593Q4218 -672 4335 -755Q4525 -889 4661 -889Q4787 -889 4872 -803Q4953 -722 4953 -601Q4953 -435 4791 -254Q4745 -203 4694 -160L4791 -157Q5009 -157 5121 -238L5183 -285Q5204 -298 5225 -298H5229Q5242 -298 5242 -283Q5242 -252 5181 -194Q5065 -86 4885 -40Q4783 -14 4673 -14Q4591 -14 4415 -33Q4358 -39 4313 -42Q4267 -45 4178 -45Q4053 -45 3896 -10L3883 15Q3526 676 3156 1176Q2899 1524 2620 1822L2576 1869Q2506 1946 2319 2122Q2244 2193 2217 2215Q2168 2255 2139 2255Q2124 2255 2124 2241ZM3966 -142Q4087 -178 4246 -187Q4278 -189 4308 -189L4482 -185Q4622 -185 4687 -249Q4696 -257 4704 -267Q4779 -358 4779 -469Q4779 -590 4692 -664Q4618 -728 4508 -728Q4374 -728 4210 -553Q4153 -493 4117 -439Q4063 -357 3981 -174Q3970 -150 3966 -142ZM4571 -1576Q4571 -1615 4600 -1633Q4612 -1640 4628 -1640H4632Q4708 -1638 4735 -1483Q4744 -1431 4744 -1391Q4744 -1190 4695 -1190Q4671 -1190 4663 -1224L4642 -1358Q4625 -1441 4587 -1519Q4571 -1553 4571 -1576ZM4776 -1338 4798 -1541Q4829 -1764 4907 -1773Q4911 -1774 4914 -1774Q4954 -1774 4973 -1734Q4981 -1716 4981 -1693Q4981 -1641 4882 -1425L4852 -1360Q4826 -1306 4804 -1303Q4784 -1303 4777 -1324Q4775 -1331 4776 -1338ZM4822 -1214Q4822 -1254 4907 -1373Q4996 -1499 5056 -1537Q5069 -1545 5078 -1547Q5083 -1548 5096 -1548Q5136 -1546 5148 -1510Q5152 -1500 5152 -1488Q5152 -1460 5122 -1427Q5097 -1399 5027 -1338Q4980 -1297 4899 -1215Q4869 -1184 4849 -1183Q4827 -1183 4823 -1205Q4822 -1209 4822 -1214ZM4005 2241Q4005 2213 4067 2152L4253 1974L4277 1951Q4991 1239 5602 103Q5796 -257 5857 -478Q5878 -551 5878 -595Q5878 -669 5837 -713Q5805 -746 5755 -746Q5646 -746 5571 -695Q5531 -667 5520 -664Q5512 -662 5504 -662Q5488 -662 5488 -675Q5488 -704 5542 -759Q5642 -861 5788 -894Q5830 -904 5874 -906Q5884 -907 5893 -907Q5955 -907 5985 -883Q6010 -865 6029 -828Q6052 -783 6052 -726Q6052 -668 6029 -599Q6030 -599 6061 -628Q6118 -684 6210 -751Q6405 -886 6537 -889Q6661 -889 6748 -799Q6841 -704 6841 -552Q6841 -414 6736.0 -262.0Q6631 -110 6483 -35Q6383 16 6285 16Q6142 16 6133 -77Q6132 -83 6132 -89Q6132 -133 6164 -173Q6201 -219 6267 -221H6270Q6315 -221 6347 -189Q6374 -160 6386 -154Q6405 -144 6432 -144Q6579 -144 6639 -283Q6667 -348 6667 -421Q6667 -563 6575 -653Q6498 -728 6395 -728Q6250 -728 6096 -563Q5980 -437 5904 -266Q5745 93 5451 565Q5023 1253 4551 1768L4457 1869Q4387 1946 4200 2122Q4125 2193 4098 2215Q4049 2255 4020 2255Q4005 2255 4005 2241ZM6759 -675Q6759 -705 6814 -761Q6917 -862 7068 -895Q7107 -903 7147 -906H7176Q7263 -906 7301 -825Q7322 -781 7322 -723Q7322 -628 7253 -444Q7162 -201 7045 -75Q6976 0 6926 14Q6919 16 6913 16Q6897 16 6897 3Q6897 -17 6948 -78Q6965 -98 6970 -106Q7056 -234 7116 -435Q7148 -540 7148 -590Q7148 -689 7087 -729Q7061 -747 7027 -747Q6918 -747 6843 -695Q6802 -667 6790 -664Q6783 -662 6775 -662Q6759 -662 6759 -675ZM6858 -750Q6858 -774 6895 -812Q6907 -824 6919 -832L7288 -1086Q7444 -1199 7532 -1321Q7608 -1426 7608 -1513Q7608 -1563 7574 -1615Q7522 -1697 7417 -1697Q7321 -1697 7305 -1624Q7302 -1607 7302 -1587Q7302 -1514 7359 -1478Q7383 -1463 7412 -1461Q7460 -1500 7482 -1500Q7493 -1500 7493 -1490Q7493 -1466 7445 -1417Q7370 -1340 7298 -1339Q7233 -1339 7195 -1394Q7168 -1433 7168 -1486Q7168 -1577 7247 -1668Q7291 -1719 7356 -1762Q7445 -1819 7524 -1819Q7644 -1819 7704 -1737Q7741 -1685 7741 -1614Q7741 -1436 7489 -1189Q7417 -1118 7343 -1060Q7238 -977 7027 -835Q6886 -741 6869 -741Q6858 -741 6858 -750ZM7031 1806Q7031 1772 7122 1690Q7987 908 8470 91L8485 66Q8373 -36 8310 -257L8240 -530Q8197 -673 8131 -712Q8122 -718 8111 -722Q8092 -728 8077 -728H8068Q8003 -728 7933 -679Q7888 -647 7871 -645Q7868 -644 7864 -644Q7848 -644 7848 -657Q7848 -699 7928 -766Q8031 -852 8144 -879Q8180 -888 8212 -888Q8311 -888 8371 -781Q8381 -763 8391 -740Q8445 -794 8544 -845Q8661 -906 8755 -906Q8904 -906 8934 -807Q8943 -777 8943 -734Q8943 -524 8631 6Q8154 815 7320 1602L7181 1733Q7084 1819 7044 1819Q7031 1819 7031 1806ZM8416 -669Q8496 -338 8538 -244Q8563 -189 8601 -141Q8651 -217 8713 -383Q8769 -534 8769 -604Q8769 -725 8654 -743Q8630 -746 8601 -746H8599Q8510 -746 8416 -669ZM8876 -657Q8876 -685 8935 -743Q9043 -847 9191 -888Q9233 -899 9276 -904Q9319 -908 9367 -908Q9519 -908 9770 -859Q10013 -812 10118 -803Q10184 -797 10246 -797Q10460 -797 10573 -881L10641 -936Q10664 -951 10688 -951Q10704 -951 10704 -937Q10704 -896 10602 -814Q10563 -781 10520 -754Q10348 -644 10133 -637H10098Q9999 -637 9858 -658Q9838 -661 9826 -662Q9577 -618 9407 -487Q9196 -324 9196 -80Q9196 132 9342 283Q9487 435 9722 468Q9779 476 9838 476Q10086 476 10237 362Q10303 312 10343.0 243.0Q10383 174 10383 116Q10383 83 10350 41Q10316 -3 10311 -31Q10310 -39 10310 -48Q10310 -114 10368 -156Q10405 -181 10444 -181Q10496 -181 10529 -133Q10558 -91 10558 -24Q10558 135 10377 329Q10344 364 10311 394Q10053 624 9728 635Q9713 636 9697 636Q9421 636 9233 489Q9073 363 9034 175Q9023 122 9023 68Q9023 -89 9096 -227L9111 -255Q9234 -470 9481 -631Q9543 -671 9602 -701Q9602 -711 9380 -736Q9265 -748 9220 -748Q9056 -748 8972 -687L8928 -654Q8911 -644 8892 -644Q8876 -644 8876 -657ZM9471 -750Q9471 -773 9510 -812Q9528 -829 9550 -844Q9552 -846 9843 -1006Q10212 -1207 10304 -1263Q10500 -1384 10567 -1479Q10580 -1498 10590 -1518Q10615 -1567 10615 -1614Q10615 -1663 10582 -1715Q10528 -1797 10421 -1797Q10353 -1797 10324 -1772Q10318 -1767 10315 -1761Q10300 -1732 10300 -1701Q10300 -1637 10352 -1603Q10376 -1587 10401 -1586Q10422 -1585 10447 -1601Q10459 -1609 10471.0 -1609.0Q10483 -1609 10483 -1598Q10483 -1566 10425 -1520Q10354 -1464 10293 -1464Q10220 -1464 10185 -1527Q10167 -1560 10167 -1599Q10167 -1694 10264 -1792Q10356 -1884 10463 -1911Q10495 -1919 10524 -1919Q10647 -1919 10710 -1838Q10749 -1787 10749 -1717Q10749 -1511 10397 -1257Q10295 -1184 10170 -1112L9784 -900Q9502 -745 9495 -743Q9487 -741 9482 -741Q9471 -741 9471 -750ZM11365 3Q11365 -14 11384 -36Q11443 -101 11493 -217Q11532 -307 11573 -436Q11795 -1137 11851 -1290Q11885 -1381 11933 -1490Q12138 -1958 12425 -2272Q12614 -2478 12676 -2478Q12690 -2478 12690 -2465Q12690 -2436 12622 -2368L12516 -2263L12494 -2238Q12325 -2045 12203 -1806Q12017 -1444 11801 -730L11769 -625L11793 -649Q12032 -888 12209 -888Q12340 -888 12420 -772Q12471 -696 12482 -599Q12575 -708 12693 -790Q12834 -889 12941 -889Q13045 -889 13123 -809Q13188 -742 13209 -637Q13217 -604 13217 -562Q13217 -389 13086 -222Q12980 -85 12841 -20Q12763 16 12695 16Q12555 16 12540 -71Q12538 -80 12538 -89Q12538 -145 12585 -187Q12623 -221 12673 -221Q12719 -221 12752 -188Q12781 -159 12795 -152Q12813 -144 12838 -144Q12927 -144 12966 -198Q13041 -301 13042 -429Q13042 -580 12932 -679Q12876 -729 12798 -729Q12699 -729 12602 -624Q12535 -552 12467 -418Q12404 -293 12372 -248Q12363 -235 12354 -224Q12201 -27 12021 10Q11988 16 11958 16Q11834 16 11808 -58Q11803 -73 11803 -89Q11803 -141 11847 -183Q11886 -221 11940 -221Q11987 -221 12019 -187Q12046 -159 12058 -153Q12076 -143 12101 -143Q12173 -143 12213 -176Q12218 -179 12221 -183Q12302 -276 12309 -414V-430Q12309 -565 12223 -655Q12167 -715 12094 -727Q12083 -728 12064 -728Q11859 -728 11633 -262Q11553 -97 11453 -18Q11409 16 11381 16Q11365 16 11365 3ZM13140 -675Q13140 -705 13195 -761Q13298 -862 13449 -895Q13488 -903 13528 -906H13557Q13644 -906 13682 -825Q13703 -781 13703 -723Q13703 -689 13690 -627Q13691 -627 13716 -650Q13958 -889 14135 -889Q14285 -889 14361 -751Q14400 -681 14401 -621Q14401 -618 14402 -615Q14415 -625 14496 -701Q14634 -831 14744 -869Q14801 -888 14857 -888Q14964 -888 15041 -808Q15121 -724 15121 -598Q15121 -415 14938 -215Q14909 -184 14878 -155L14914 -156Q15192 -162 15307 -246L15361 -287Q15379 -298 15399 -298H15403Q15416 -298 15416 -281Q15414 -243 15344 -183Q15220 -77 15027 -36Q14980 -26 14931 -21Q14864 -13 14749 -13Q14627 -13 14337 -33Q14137 -47 13989 -47Q13650 -47 13318 13Q13299 16 13293 16Q13278 16 13278 3Q13278 -20 13319 -67Q13343 -93 13351 -105Q13436 -231 13496 -431Q13529 -538 13529 -590Q13529 -689 13468 -729Q13442 -747 13408 -747Q13299 -747 13224 -695Q13183 -667 13171 -664Q13164 -662 13156 -662Q13140 -662 13140 -675ZM13478 -138Q13535 -157 13803 -175Q14068 -193 14126 -212Q14228 -325 14228 -462Q14228 -524 14194 -594Q14128 -729 13989 -729Q13843 -729 13683 -487Q13642 -425 13536 -236Q13499 -170 13478 -138ZM14204 -189H14205Q14278 -189 14557 -169Q14636 -163 14669 -163Q14795 -163 14854 -231Q14938 -326 14947 -444V-466Q14947 -591 14858 -670Q14805 -716 14741 -727Q14727 -728 14706 -728Q14594 -728 14489 -596Q14451 -549 14357 -399Q14273 -265 14216 -204Q14204 -191 14204 -189ZM14202 -1127Q14202 -1145 14252 -1184L14332 -1247Q14502 -1384 14767 -1573Q15003 -1742 15033 -1742Q15067 -1742 15078 -1713Q15082 -1705 15082 -1697Q15082 -1670 15057 -1648Q14974 -1575 14575 -1316Q14250 -1105 14227 -1105Q14205 -1105 14202 -1127ZM15660 -657Q15660 -685 15719 -743Q15827 -847 15975 -888Q16017 -899 16060 -904Q16103 -908 16151 -908Q16303 -908 16554 -859Q16797 -812 16902 -803Q16968 -797 17030 -797Q17244 -797 17357 -881L17425 -936Q17448 -951 17472 -951Q17488 -951 17488 -937Q17488 -896 17386 -814Q17347 -781 17304 -754Q17132 -644 16917 -637H16882Q16783 -637 16642 -658Q16622 -661 16610 -662Q16361 -618 16191 -487Q15980 -324 15980 -80Q15980 132 16126 283Q16271 435 16506 468Q16563 476 16622 476Q16870 476 17021 362Q17087 312 17127.0 243.0Q17167 174 17167 116Q17167 83 17134 41Q17100 -3 17095 -31Q17094 -39 17094 -48Q17094 -114 17152 -156Q17189 -181 17228 -181Q17280 -181 17313 -133Q17342 -91 17342 -24Q17342 135 17161 329Q17128 364 17095 394Q16837 624 16512 635Q16497 636 16481 636Q16205 636 16017 489Q15857 363 15818 175Q15807 122 15807 68Q15807 -89 15880 -227L15895 -255Q16018 -470 16265 -631Q16327 -671 16386 -701Q16386 -711 16164 -736Q16049 -748 16004 -748Q15840 -748 15756 -687L15712 -654Q15695 -644 15676 -644Q15660 -644 15660 -657ZM16219 -751Q16219 -767 16241 -793Q16299 -862 16642 -1245Q16808 -1429 16855 -1477Q17123 -1748 17317 -1806Q17359 -1819 17392 -1819Q17400 -1820 17414 -1820Q17522 -1820 17581 -1738Q17620 -1683 17620 -1611Q17620 -1513 17532 -1405Q17447 -1300 17342 -1266Q17305 -1254 17270 -1254Q17188 -1254 17147 -1313Q17125 -1345 17125 -1384Q17125 -1448 17193 -1521Q17247 -1579 17287 -1581Q17298 -1581 17298 -1571Q17298 -1557 17279 -1534Q17260 -1512 17260 -1487Q17260 -1430 17309 -1397Q17340 -1377 17380 -1377Q17437 -1377 17454 -1401Q17486 -1449 17486 -1511Q17486 -1600 17421 -1655Q17370 -1697 17301 -1697Q17140 -1697 16919 -1470L16867 -1414L16524 -1029Q16326 -805 16308 -787Q16259 -742 16230 -741Q16219 -741 16219 -751Z"/></svg>';
+
+/* original emblem: a bat hanging from the cave roof, wings wrapped */
+const EMBLEM=`<svg class="emblem" viewBox="-10 0 220 250" aria-hidden="true">
+  <defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1f27"/><stop offset="1" stop-color="#0a0b0e"/></linearGradient></defs>
+  <circle cx="100" cy="132" r="104" fill="none" stroke="#D9A441" stroke-width="2.4" opacity=".8"/>
+  <circle cx="100" cy="132" r="97" fill="none" stroke="#F2C14E" stroke-width=".8" opacity=".4"/>
+  <path d="M22 18 L178 18 L150 30 Q124 42 112 38 Q100 48 88 38 Q76 42 50 30 Z" fill="#1a1d23" stroke="#D9A441" stroke-width="1.2"/>
+  <path d="M92 38 L90 58 M108 38 L110 58" stroke="#D9A441" stroke-width="3" stroke-linecap="round"/>
+  <path d="M100 56 C138 62 160 98 152 140 C146 170 124 192 100 206 C76 192 54 170 48 140 C40 98 62 62 100 56 Z" fill="url(#wg)" stroke="#D9A441" stroke-width="1.6"/>
+  <path d="M100 62 C100 110 100 160 100 204 M100 66 C84 96 72 130 76 176 M100 66 C116 96 128 130 124 176 M100 70 C72 96 58 120 56 150 M100 70 C128 96 142 120 144 150" fill="none" stroke="#D9A441" stroke-width="1" opacity=".55"/>
+  <path d="M82 198 C76 214 78 232 86 244 C92 236 96 224 100 214 C104 224 108 236 114 244 C122 232 124 214 118 198 C112 206 106 210 100 210 C94 210 88 206 82 198 Z" fill="#0d0f13" stroke="#D9A441" stroke-width="1.4"/>
+  <path d="M88 224 l4 -2 M112 224 l-4 -2" stroke="#F2C14E" stroke-width="2.4" stroke-linecap="round"/>
+</svg>`;
+
+const GITHUB='<svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>';
+
+const ICONS={
+  route:'<svg viewBox="0 0 48 48"><circle cx="12" cy="36" r="4"/><circle cx="36" cy="12" r="4"/><path d="M16 36h14a6 6 0 0 0 0-12H18a6 6 0 0 1 0-12h14"/></svg>',
+  album:'<svg viewBox="0 0 48 48"><rect x="8" y="12" width="22" height="30" rx="3"/><path d="M16 8h20a4 4 0 0 1 4 4v24"/><path d="M14 22h10M14 29h10"/></svg>',
+  default:'<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="14"/><path d="M24 16v16M16 24h16"/></svg>'
+};
+const ACCENTS=['var(--trip)','var(--album)','var(--gold)','var(--ember)'];
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),2800);}
+function setGate(html){$('gate').innerHTML=html;$('gate').style.display='flex';$('app').style.display='none';}
+function urlAuthError(){
+  const p=new URLSearchParams((location.hash||'').replace(/^#/,'')||(location.search||'').replace(/^\?/,''));
+  const e=p.get('error_description')||p.get('error');
+  return e?decodeURIComponent(e.replace(/\+/g,' ')):null;
+}
+
+function loginGate(){
+  const err=urlAuthError(), standalone=window.navigator.standalone===true;
+  setGate(EMBLEM
+    +'<div class="rune">'+RUNE_SVG+'</div>'
+    +'<div class="caption">One app to rule them all</div>'
+    +'<div class="cta"><button class="btn" onclick="signIn()">'+GITHUB+'Enter the Cave</button></div>'
+    +(err?'<p class="gate-msg err">Login didn’t complete: '+esc(err)+'</p>':'')
+    +(standalone?'<p class="gate-msg">Tip: if login loops from the home-screen icon, sign in once from Safari at this same address, then reopen the app.</p>':''));
+}
+
+async function signIn(){
+  await sb.auth.signInWithOAuth({provider:'github',options:{redirectTo:location.origin+location.pathname}});
+}
+async function signOut(){await sb.auth.signOut();location.hash='';location.reload();}
+
+async function boot(){
+  if(booting)return; booting=true;
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){loginGate();return;}
+    const u=session.user.user_metadata||{};
+    if((u.user_name||u.preferred_username||'').toLowerCase()!==OWNER){
+      await sb.auth.signOut();
+      setGate(EMBLEM+'<div class="caption" style="margin-top:18px">Not on the list</div><p class="gate-msg">This GitHub account is not authorised.</p><div class="cta" style="animation-delay:0s"><button class="btn" onclick="signIn()">Try another account</button></div>');
+      return;
+    }
+    $('gate').style.display='none';$('app').style.display='flex';
+    $('homeTiles').innerHTML='<div class="note"><div class="spinner" style="margin:0 auto 14px"></div>Opening the cave…</div>';
+    try{await load();}catch(e){$('homeTiles').innerHTML='<div class="note">Couldn’t load your apps.<br>'+esc(e.message||e)+'<br><br><button class="btn ghost" onclick="retry()">Retry</button></div>';return;}
+    route();
+  }finally{booting=false;}
+}
+function retry(){boot();}
+sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_IN'||ev==='SIGNED_OUT')boot();});
+window.addEventListener('hashchange',()=>{if($('app').style.display==='flex'&&LINKS.length)route(true);});
+boot();
+
+async function load(){
+  const {data,error}=await sb.from('cave_links').select('*').order('sort_order',{ascending:true}).order('id',{ascending:true});
+  if(error)throw error; LINKS=data||[];
+}
+
+function safeUrl(u){return typeof u==='string'&&/^https:\/\//i.test(u)?u:null;}
+function childrenOf(id){return LINKS.filter(l=>l.parent_id===id);}
+
+function tileHtml(l,i){
+  const kids=childrenOf(l.id).length, url=safeUrl(l.url);
+  const action=kids?'openSub('+l.id+')':(url?'openApp('+l.id+')':'');
+  const accent=ACCENTS[i%ACCENTS.length];
+  return '<button class="tile" style="--c:'+accent+'" '+(action?'onclick="'+action+'"':'disabled')+'>'
+    +'<span class="ic">'+(ICONS[l.icon]||ICONS.default)+'</span>'
+    +'<span class="name">'+esc(l.label)+'</span>'
+    +(l.subtitle?'<span class="sub">'+esc(l.subtitle)+'</span>':'')
+    +'<span class="go">&#8594;</span></button>';
+}
+
+function renderHome(){
+  const top=LINKS.filter(l=>l.parent_id==null);
+  $('homeTiles').innerHTML=top.length?top.map(tileHtml).join(''):'<div class="note">No apps yet.<br>Add rows to <b>cave_links</b> in Supabase.</div>';
+}
+function renderSub(id){
+  const p=LINKS.find(l=>l.id===id); if(!p){goHome();return;}
+  $('subTitle').textContent=p.label;
+  const kids=childrenOf(id);
+  $('subTiles').innerHTML=kids.length?kids.map((k,i)=>tileHtml(k,i)).join(''):'<div class="note">Nothing in here yet.</div>';
+}
+function show(v,back){
+  ['home','sub'].forEach(n=>{const el=$('v-'+n);el.classList.toggle('on',n===v);el.classList.toggle('back',!!back);});
+  window.scrollTo(0,0);
+}
+function route(back){
+  const m=/^#\/(\d+)$/.exec(location.hash||'');
+  if(m){renderSub(+m[1]);show('sub',back);}
+  else{renderHome();show('home',back);}
+}
+function openSub(id){location.hash='#/'+id;}
+function goHome(){if(location.hash){history.length>1?history.back():(location.hash='');}else route(true);}
+function openApp(id){
+  const l=LINKS.find(x=>x.id===id), url=l&&safeUrl(l.url);
+  if(!url){toast('No link set');return;}
+  location.href=url;
+}
+</script>
+</body>
+</html>
