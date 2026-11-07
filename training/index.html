@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#EEF0EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141917" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png?v=1">
+<title>Full Body Machine Session</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column training sheet; numbered station rows (real session order) open into a grid of exercise cards with animated movement diagrams. */
+:root{
+  --bg:#EEF0EC; --card:#FAFBF8; --ink:#1B2220; --muted:#5E6864; --line:#D3D8D2;
+  --steel:#9AA39E; --ghost:#C3CAC4; --accent:#C8322B; --accent-soft:#F4DCD8;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141917; --card:#1C2220; --ink:#E7ECE8; --muted:#9AA5A0; --line:#2E3633;
+  --steel:#6F7A75; --ghost:#3C4642; --accent:#F0614F; --accent-soft:#3A2220; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141917; --card:#1C2220; --ink:#E7ECE8; --muted:#9AA5A0; --line:#2E3633;
+  --steel:#6F7A75; --ghost:#3C4642; --accent:#F0614F; --accent-soft:#3A2220; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:grid;gap:14px;margin-bottom:24px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(34px,6vw,52px);line-height:1;margin:0;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+.rules{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;color:var(--muted)}
+.rules b{color:var(--ink);font-weight:600}
+.groups{display:grid;gap:10px}
+details.group{background:var(--card);border:1px solid var(--line);border-radius:6px}
+details.group[open]{border-color:var(--steel)}
+summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;padding:14px 16px}
+summary::-webkit-details-marker{display:none}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--display);font-weight:700;font-size:30px;color:var(--accent);width:1.4ch;text-align:center;line-height:1}
+.gname{font-family:var(--display);font-weight:700;font-size:24px;text-transform:uppercase;line-height:1.1;letter-spacing:.02em}
+.gsub{font-size:13.5px;color:var(--muted);min-width:0}
+.gmeta{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+.chev{display:inline-block;margin-left:8px;transition:transform .2s}
+details[open] .chev{transform:rotate(90deg)}
+.panel{padding:4px 16px 18px;display:grid;gap:12px}
+.note{font-size:13.5px;color:var(--muted);margin:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:6px;display:grid;grid-template-rows:auto 1fr;overflow:hidden;background:var(--bg)}
+.fig{background:var(--card);border-bottom:1px solid var(--line);aspect-ratio:3/2;max-width:100%}
+.fig svg{width:100%;height:100%;display:block}
+.body{padding:12px 14px 14px;display:grid;gap:8px;align-content:start;min-width:0}
+.ename{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.1;text-transform:uppercase}
+.target{font-size:13px;color:var(--accent);font-weight:600}
+.dose{display:flex;flex-wrap:wrap;gap:6px}
+.dose span{font-family:var(--mono);font-size:12px;padding:3px 8px;border-radius:3px;background:var(--card);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.dose span.main{background:var(--accent-soft);border-color:transparent;color:var(--ink)}
+ul.cues{margin:0;padding-left:18px;font-size:14px;display:grid;gap:3px}
+a.vid{font-size:13px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;justify-self:start}
+a.vid:hover{color:var(--accent)}
+a.vid:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.warm{margin-bottom:10px;background:var(--accent-soft);border-color:transparent}
+.warm[open]{border-color:transparent}
+ol.wsteps{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+.warm .card{background:var(--card)}
+.warm .fig{background:var(--bg)}
+.warm .fig.multi{aspect-ratio:auto;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+.fig.multi figure{margin:0;background:var(--bg);display:grid;min-width:0}
+.fig.multi [data-w]{aspect-ratio:3/2;max-width:100%}
+.fig.multi [data-w] svg{width:100%;height:100%;display:block}
+.fig.multi figcaption{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:0 4px 6px}
+.wt{font-family:var(--display);font-weight:600;font-size:19px;text-transform:uppercase;line-height:1.2}
+.wt span{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:none;margin-left:6px}
+ol.wsteps p{margin:2px 0 0;font-size:14px;max-width:65ch}
+footer{margin-top:22px;font-size:13px;color:var(--muted)}
+@media (max-width:520px){.gmeta .lbl{display:none}.gname{font-size:21px}}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+</style>
+<style>
+[hidden]{display:none!important}
+a.back{font-family:var(--mono);font-size:13px;color:var(--muted);text-decoration:none;justify-self:start;padding:10px 0;min-height:44px;display:inline-flex;align-items:center}
+a.back:hover{color:var(--accent)}
+.cards .card{cursor:pointer;transition:transform .12s,border-color .2s}
+.cards .card:hover{border-color:var(--steel)}
+.cards .card:active{transform:scale(.985)}
+.cards .card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+html.lock{overflow:hidden}
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet-bg{position:absolute;inset:0;background:rgba(10,14,12,.55);animation:fade .2s both}
+.sheet-card{position:relative;width:100%;max-width:520px;max-height:88vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-bottom:none;border-radius:16px 16px 0 0;
+  padding:20px 18px calc(22px + env(safe-area-inset-bottom,0px));animation:up .28s cubic-bezier(.2,.8,.2,1) both;display:grid;gap:14px}
+@media (min-width:640px){.sheet{align-items:center}.sheet-card{border-radius:16px;border-bottom:1px solid var(--line)}}
+@keyframes up{from{transform:translateY(28px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sh-x{position:absolute;right:8px;top:8px;width:48px;height:48px;border:none;background:none;color:var(--muted);font-size:30px;cursor:pointer;border-radius:8px}
+.sh-x:focus-visible,.sh-save:focus-visible,.sh-fields input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sh-ex{font-family:var(--display);font-weight:700;font-size:28px;line-height:1.05;text-transform:uppercase;padding-right:48px}
+.sh-last{font-size:14px;color:var(--muted);min-height:1.4em}
+.sh-last b{color:var(--ink);font-weight:600}
+.sh-fields{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+.sh-fields label{display:grid;gap:6px;font-size:12px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sh-fields input{font-family:var(--display);font-weight:700;font-size:40px;line-height:1;width:100%;min-width:0;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+.sh-save{min-height:56px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:transform .12s,opacity .2s}
+.sh-save:active{transform:scale(.97)}
+.sh-save:disabled{opacity:.45;cursor:not-allowed}
+.sh-msg{font-size:14px;min-height:1.3em}
+.sh-msg.err{color:var(--accent)}
+.sh-msg a{color:var(--accent)}
+.sh-hist-h{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+ol.sh-hist{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+ol.sh-hist li{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:baseline;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);font-variant-numeric:tabular-nums}
+ol.sh-hist .d{color:var(--muted);font-size:13px}
+ol.sh-hist .v{font-family:var(--mono);font-size:14px}
+ol.sh-hist .dl{font-family:var(--mono);font-size:12px;min-width:5.5ch;text-align:right;color:var(--muted)}
+ol.sh-hist .dl.up{color:#2E8B57}
+ol.sh-hist .dl.dn{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.sheet-bg,.sheet-card{animation:none}.cards .card{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <a class="back" href="../">&#8592; Bat Cave</a>
+  <div class="eyebrow">Full body · machines first · shape over size</div>
+  <h1>Full Body Machine Session</h1>
+  <div class="rules">
+    <span><b>1–2×/week</b>, at least 48h between lifting days</span>
+    <span><b>Hard sets</b>: 3 if lifting once that week, 2 if twice</span>
+    <span><b>RIR 1–2</b>: stop with 1–2 clean reps left</span>
+    <span><b>Tempo 3-1-1</b>: 3s lowering, 1s pause at the stretch, 1s lift</span>
+    <span><b>Progress</b>: add a rep, then add weight</span>
+  </div>
+</header>
+<details class="group warm" id="warm" open>
+  <summary><span class="num">W</span><span style="min-width:0"><div class="gname">Warm-up</div><div class="gsub">About 10 minutes, before any hard set</div></span><span class="gmeta">3 steps<span class="chev" aria-hidden="true">›</span></span></summary>
+  <div class="panel">
+    <ol class="wsteps">
+      <li class="card"><div class="fig" data-w="bike"></div><div class="body"><div class="wt">1 · Easy cardio <span>5 min</span></div><p>Bike or rower at a pace where you can still talk. Goal is to raise body temperature, not to tire yourself.</p></div></li>
+      <li class="card"><div class="fig multi"><figure><div data-w="circles"></div><figcaption>Arm circles</figcaption></figure><figure><div data-w="squat"></div><figcaption>Bodyweight squat</figcaption></figure><figure><div data-w="facepull"></div><figcaption>Face pull</figcaption></figure><figure><div data-w="hinge"></div><figcaption>Hip hinge</figcaption></figure></div><div class="body"><div class="wt">2 · Mobility <span>3–4 min</span></div><p>10 arm circles each direction · 10 bodyweight squats · 10 light cable face pulls (rope at head height, pull to your ears, elbows high) · 10 hip hinges (hands on hips, push hips back, flat back).</p></div></li>
+      <li class="card"><div class="fig" data-w="ramp"></div><div class="body"><div class="wt">3 · Ramp-up set <span>per muscle group</span></div><p>Before the <b>first exercise</b> of each group, do 1 light set of 10 reps at about 50% of your working weight. The 2nd and 3rd exercises need no ramp-up. This set does not count as a hard set.</p></div></li>
+    </ol>
+    <p class="note">After a Saturday-morning HIIT, keep the cardio step to 2–3 minutes and still do the ramp-up sets.</p>
+  </div>
+</details>
+<div class="groups" id="groups"></div>
+<footer><b>Tap an exercise</b> to log your weight and reps. Diagrams are simplified side or front views: faint figure = start, solid figure = finish. Use the video link for exact form.</footer>
+</div>
+
+<script>
+const G=[
+{n:"Legs",sub:"Quads, glutes, hamstrings",ex:[
+ {name:"Leg press",t:"Quads",s:"2 × 8–12",r:"90s",c:["Feet low and shoulder-width on the platform","Lower to about 90° at the knee, lower back stays on pad","Don't lock knees hard at the top"],q:"leg press machine form quads",
+  eq:[["l",58,62,90,122,6],["r",82,120,34,7],["l",120,150,212,58,3]],
+  a:{h:[66,58],l:["96,118 72,72","72,74 86,98 98,108","96,118 122,80 150,98","=144,84 158,110"]},
+  b:{h:[66,58],l:["96,118 72,72","72,74 86,98 98,108","96,118 138,94 176,76","=168,62 184,88"]},m:[[150,124,182,94]]},
+ {name:"Seated leg curl",t:"Hamstrings",s:"2 × 10–15",r:"60s",c:["Knee lined up with machine pivot","Lean slightly forward for more stretch","Squeeze 1s at full curl"],q:"seated leg curl form",
+  eq:[["r",84,112,44,7],["l",94,58,98,112,5],["l",128,99,156,99,5]],
+  a:{h:[100,52],l:["102,64 106,108","106,108 146,108 180,110","102,64 108,86 122,100","=178,117 184,117"]},
+  b:{h:[100,52],l:["102,64 106,108","106,108 146,108 136,140","102,64 108,86 122,100","=128,138 132,144"]},m:[[188,120,146,148]]},
+ {name:"Hip thrust machine",t:"Glutes",s:"2 × 10–12",r:"90s",c:["Shins vertical at the top","Tuck chin, ribs down","Pause 1s at lockout"],q:"hip thrust machine form",
+  eq:[["r",36,104,46,8],["l",42,112,42,150,3],["l",76,112,76,150,3]],
+  a:{h:[62,92],l:["72,100 104,128","104,128 136,110 148,146","72,100 84,112 98,118","=96,121 112,121"]},
+  b:{h:[62,94],l:["72,100 110,96","110,96 144,104 148,146","72,100 86,104 102,90","=102,89 118,89"]},m:[[124,134,124,100]]}
+]},
+{n:"Chest",sub:"Upper, lower, inner",ex:[
+ {name:"Incline machine press",t:"Upper chest",s:"2 × 8–12",r:"90s",c:["Handles at mid-to-upper chest","Shoulder blades pinned back","Stop just short of lockout"],q:"incline chest press machine form",
+  eq:[["l",72,58,96,126,5],["r",92,122,34,7]],
+  a:{h:[81,66],l:["86,78 102,120","102,120 136,118 134,148","86,78 80,100 98,90"]},
+  b:{h:[81,66],l:["86,78 102,120","102,120 136,118 134,148","86,78 106,66 126,54"]},m:[[108,100,134,70]]},
+ {name:"High-to-low cable fly",t:"Lower chest",s:"2 × 10–15",r:"60s",c:["Pulleys set high, one step forward, slight lean","Sweep hands down and together toward your hips","Let arms open wide and high for the stretch"],q:"high to low cable fly form",
+  eq:[["r",14,4,8,146],["r",218,4,8,146],["c",24,10,4],["c",216,10,4]],
+  a:{h:[120,40],l:["104,56 136,56","120,56 120,104","110,104 130,104","112,104 104,148","128,104 136,148","104,56 80,40 60,26","136,56 160,40 180,26","~60,26 24,10","~180,26 216,10"]},
+  b:{h:[120,40],l:["104,56 136,56","120,56 120,104","110,104 130,104","112,104 104,148","128,104 136,148","104,56 108,80 116,98","136,56 132,80 124,98","~116,98 24,10","~124,98 216,10"]},m:[[62,44,100,92],[178,44,140,92]]},
+ {name:"Pec deck",t:"Inner chest + stretch",s:"2 × 12–15",r:"60s",c:["Handles at chest height","Soft bend in elbows, fixed","Hold the squeeze 1s"],q:"pec deck fly form",
+  eq:[["rf",104,34,32,80],["r",96,112,48,7]],
+  a:{h:[120,38],l:["104,56 136,56","120,56 120,110","110,112 130,112","112,112 108,148","128,112 132,148","104,56 80,58 78,36","136,56 160,58 162,36"]},
+  b:{h:[120,38],l:["104,56 136,56","120,56 120,110","110,112 130,112","112,112 108,148","128,112 132,148","104,56 114,62 114,40","136,56 126,62 126,40"]},m:[[72,26,104,26],[168,26,136,26]]}
+]},
+{n:"Back",sub:"Width, thickness, lower back",ex:[
+ {name:"Lat pulldown",t:"Lats (width)",s:"2 × 8–12",r:"90s",c:["Grip just outside shoulders","Drive elbows down to ribs","Full stretch overhead each rep"],q:"lat pulldown form",
+  eq:[["r",100,102,40,6],["r",98,114,44,7]],
+  a:{h:[120,40],l:["104,58 136,58","120,58 120,110","110,112 130,112","112,112 110,148","128,112 130,148","=66,18 174,18","~120,0 120,18","104,58 86,38 80,18","136,58 154,38 160,18"]},
+  b:{h:[120,40],l:["104,58 136,58","120,58 120,110","110,112 130,112","112,112 110,148","128,112 130,148","=66,60 174,60","~120,0 120,60","104,58 84,80 80,60","136,58 156,80 160,60"]},m:[[190,22,190,60]]},
+ {name:"Chest-supported row",t:"Mid back (thickness)",s:"2 × 8–12",r:"90s",c:["Chest stays on pad","Pull elbows past torso","Let shoulders reach forward on the stretch"],q:"chest supported row machine form",
+  eq:[["l",142,78,152,112,6],["r",88,118,34,7],["l",150,112,150,150,3]],
+  a:{h:[141,72],l:["102,116 132,82","102,116 134,118 134,148","132,82 152,94 172,98","=172,92 172,104"]},
+  b:{h:[141,72],l:["102,116 132,82","102,116 134,118 134,148","132,82 112,96 130,104","=130,98 130,110"]},m:[[184,112,140,112]]},
+ {name:"45° back extension",t:"Lower back + glutes",s:"2 × 12–15",r:"60s",c:["Pad just below hip crease","Round down, then rise to a straight line","No hyperextension at the top"],q:"45 degree back extension form",
+  eq:[["l",90,112,106,99,6],["c",62,138,5],["l",66,150,96,110,3]],
+  a:{h:[120,143],l:["58,130 80,112 102,94","102,94 116,132","116,132 106,122 114,116"]},
+  b:{h:[143,61],l:["58,130 80,112 102,94","102,94 134,68","134,68 122,76 130,84"]},m:[[136,134,154,86]]}
+]},
+{n:"Shoulders",sub:"Side and rear delts (front delts get hit by presses)",ex:[
+ {name:"Machine lateral raise",t:"Side delts (width)",s:"2 × 12–15",r:"60s",c:["Lead with elbows","Stop at shoulder height","Slow 3s lowering"],q:"machine lateral raise form",
+  eq:[["rf",106,40,28,72],["r",98,114,44,7]],
+  a:{h:[120,40],l:["104,58 136,58","120,58 120,110","110,112 130,112","112,112 110,148","128,112 130,148","104,58 100,80 98,102","136,58 140,80 142,102"]},
+  b:{h:[120,40],l:["104,58 136,58","120,58 120,110","110,112 130,112","112,112 110,148","128,112 130,148","104,58 82,58 60,60","136,58 158,58 180,60"]},m:[[88,108,58,74],[152,108,182,74]]},
+ {name:"Reverse pec deck",t:"Rear delts",s:"2 × 12–15",r:"60s",c:["Face the pad, arms at shoulder height","Sweep arms out wide, not back","Don't squeeze shoulder blades hard"],q:"reverse pec deck rear delt form",
+  eq:[["rf",106,40,28,72],["r",98,114,44,7]],
+  a:{h:[120,40],l:["104,58 136,58","120,58 120,110","110,112 130,112","112,112 110,148","128,112 130,148","104,58 112,62 118,66","136,58 128,62 122,66"]},
+  b:{h:[120,40],l:["104,58 136,58","120,58 120,110","110,112 130,112","112,112 110,148","128,112 130,148","104,58 82,58 60,58","136,58 158,58 180,58"]},m:[[108,46,62,46],[132,46,178,46]]}
+]},
+{n:"Triceps",sub:"Long head + outer heads",ex:[
+ {name:"Overhead cable extension",t:"Long head (arm fullness)",s:"2 × 10–15",r:"60s",c:["Face away from stack, staggered stance","Elbows stay pointed forward","Deep stretch behind the head"],q:"overhead cable tricep extension rope form",
+  eq:[["r",40,10,10,140],["c",56,108,4]],
+  a:{h:[133,28],l:["122,80 130,40","122,80 130,114 140,148","122,80 112,114 102,148","130,40 144,22 124,14","~124,14 56,108"]},
+  b:{h:[133,28],l:["122,80 130,40","122,80 130,114 140,148","122,80 112,114 102,148","130,40 144,22 164,10","~164,10 56,108"]},m:[[122,6,160,4]]},
+ {name:"Cable pushdown",t:"Lateral + medial heads",s:"2 × 10–15",r:"60s",c:["Elbows pinned to sides","Lock out fully, squeeze","Control the way up"],q:"cable tricep pushdown form",
+  eq:[["r",176,4,10,146],["c",170,12,4]],
+  a:{h:[124,26],l:["126,80 122,38","126,80 128,114 130,148","126,80 120,114 116,148","122,38 126,62 148,50","~148,50 170,12"]},
+  b:{h:[124,26],l:["126,80 122,38","126,80 128,114 130,148","126,80 120,114 116,148","122,38 126,62 140,82","~140,82 170,12"]},m:[[158,58,150,92]]}
+]},
+{n:"Biceps",sub:"Short head + long head (peak)",ex:[
+ {name:"Preacher curl machine",t:"Short head",s:"2 × 10–12",r:"60s",c:["Armpit snug on pad","Full extension at the bottom","Don't lift elbows off pad"],q:"preacher curl machine form",
+  eq:[["l",112,90,140,112,8],["r",88,120,34,7],["l",130,112,130,150,3]],
+  a:{h:[110,66],l:["100,120 108,78","100,120 134,118 132,148","108,78 128,96 146,112"]},
+  b:{h:[110,66],l:["100,120 108,78","100,120 134,118 132,148","108,78 128,96 124,74"]},m:[[156,108,136,70]]},
+ {name:"Behind-body cable curl",t:"Long head (peak)",s:"2 × 10–12",r:"60s",c:["Face away from a low pulley","Arm stays behind torso","Curl without moving the elbow forward"],q:"bayesian cable curl form",
+  eq:[["r",30,10,10,140],["c",46,138,4]],
+  a:{h:[131,26],l:["124,80 128,38","124,80 134,114 144,148","124,80 114,114 106,148","128,38 116,60 100,74","~100,74 46,138"]},
+  b:{h:[131,26],l:["124,80 128,38","124,80 134,114 144,148","124,80 114,114 106,148","128,38 116,60 132,46","~132,46 46,138"]},m:[[94,62,120,32]]}
+]},
+{n:"Calves",sub:"Gastrocnemius + soleus",ex:[
+ {name:"Standing calf raise",t:"Gastrocnemius (knee straight)",s:"2 × 10–15",r:"60s",c:["Balls of feet on edge","2s pause in the deep stretch","Rise as high as possible"],q:"standing calf raise machine form",
+  eq:[["r",136,138,32,12],["r",178,4,8,146]],
+  a:{h:[124,20],l:["126,74 124,32","126,74 127,107 128,140 146,138","124,32 136,40 134,26","=112,27 140,27"]},
+  b:{h:[122,8],l:["124,62 122,20","124,62 126,95 132,126 146,138","122,20 134,28 132,14","=110,15 138,15"]},m:[[104,126,104,106]]},
+ {name:"Seated calf raise",t:"Soleus (knee bent)",s:"2 × 12–15",r:"60s",c:["Pad sits on lower thighs","Full drop, full rise","Slow, no bouncing"],q:"seated calf raise machine form",
+  eq:[["r",140,136,26,12],["r",70,106,44,8]],
+  a:{h:[91,50],l:["94,104 92,62","94,104 132,104 132,140 150,136","92,62 104,84 118,96","=116,97 146,97"]},
+  b:{h:[91,50],l:["94,104 92,62","94,104 132,94 134,126 150,136","92,62 104,82 118,88","=116,87 146,87"]},m:[[172,128,172,100]]}
+]},
+{n:"Abs",sub:"Upper, lower, obliques",ex:[
+ {name:"Cable crunch",t:"Upper abs",s:"2 × 12–15",r:"60s",c:["Kneel, rope beside head","Curl ribs toward hips","Hips stay still"],q:"kneeling cable crunch form",
+  eq:[["r",178,4,10,146],["c",172,12,4]],
+  a:{h:[126,58],l:["112,110 112,148 82,148","112,110 118,90 122,70","122,70 136,76 132,62","~132,62 172,12"]},
+  b:{h:[152,126],l:["112,110 112,148 82,148","112,110 132,100 144,116","144,116 158,108 160,120","~160,120 172,12"]},m:[[140,50,166,96]]},
+ {name:"Captain's chair leg raise",t:"Lower abs",s:"2 × 10–15",r:"60s",c:["Back flat on pad","Curl pelvis up, not just legs","Lower slowly, no swinging"],q:"captain's chair knee raise form",
+  eq:[["l",96,34,96,104,6],["l",108,70,146,70,6],["l",96,104,96,150,3],["l",142,70,142,150,3]],
+  a:{h:[110,36],l:["106,92 108,48","108,48 108,70 132,70","106,92 108,122 112,148"]},
+  b:{h:[110,36],l:["106,92 108,48","108,48 108,70 132,70","106,92 140,82 146,116"]},m:[[160,140,160,94]]},
+ {name:"Cable woodchop",t:"Obliques (waist shape)",s:"2 × 12 / side",r:"60s",c:["Arms stay long","Rotate through the torso, pivot back foot","Controlled return"],q:"high to low cable woodchop form",
+  eq:[["r",196,4,8,146],["c",192,10,4]],
+  a:{h:[120,30],l:["104,48 136,48","120,48 120,92","110,92 130,92","110,92 100,148","130,92 140,148","104,48 128,34 152,22","136,48 150,34 156,22","~154,22 192,10"]},
+  b:{h:[120,30],l:["104,48 136,48","120,48 120,92","110,92 130,92","110,92 100,148","130,92 140,148","104,48 92,70 82,92","136,48 112,74 86,94","~84,93 192,10"]},m:[[150,40,96,90]]}
+]}
+];
+
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const NS="http://www.w3.org/2000/svg";
+const el=(t,a={})=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+const parse=s=>{const kind=s[0]==="~"?"cable":s[0]==="="?"pad":"body";return{kind,pts:s.replace(/^[~=]/,"").trim().split(/\s+/).map(p=>p.split(",").map(Number))}};
+const ptsStr=p=>p.map(q=>q.join(",")).join(" ");
+const style=k=>k==="cable"?{stroke:"var(--steel)","stroke-width":1.2}:k==="pad"?{stroke:"var(--steel)","stroke-width":5}:{stroke:"var(--ink)","stroke-width":3.4};
+
+function drawPose(g,pose,ghost){
+  const nodes=[];
+  pose.l.map(parse).forEach(ln=>{
+    const st=style(ln.kind);
+    const pl=el("polyline",{points:ptsStr(ln.pts),fill:"none","stroke-linecap":"round","stroke-linejoin":"round",...st});
+    if(ghost){pl.setAttribute("stroke",ln.kind==="body"?"var(--ghost)":"var(--ghost)");}
+    g.appendChild(pl);nodes.push({pl,ln});
+  });
+  const head=el("circle",{cx:pose.h[0],cy:pose.h[1],r:8.5,fill:"var(--card)",stroke:ghost?"var(--ghost)":"var(--ink)","stroke-width":3});
+  g.appendChild(head);
+  return{nodes,head};
+}
+
+function figure(ex){
+  const svg=el("svg",{viewBox:"0 -6 240 166",role:"img","aria-label":ex.name+" movement diagram"});
+  const defs=el("defs");const mk=el("marker",{id:"ah",viewBox:"0 0 10 10",refX:"8",refY:"5",markerWidth:"6",markerHeight:"6",orient:"auto-start-reverse"});
+  mk.appendChild(el("path",{d:"M0,0 L10,5 L0,10 z",fill:"var(--accent)"}));defs.appendChild(mk);svg.appendChild(defs);
+  svg.appendChild(el("line",{x1:10,y1:150,x2:230,y2:150,stroke:"var(--line)","stroke-width":2}));
+  ex.eq.forEach(s=>{
+    const [k,...v]=s;
+    if(k==="l")svg.appendChild(el("line",{x1:v[0],y1:v[1],x2:v[2],y2:v[3],stroke:"var(--steel)","stroke-width":v[4]||3,"stroke-linecap":"round"}));
+    else if(k==="r"||k==="rf")svg.appendChild(el("rect",{x:v[0],y:v[1],width:v[2],height:v[3],rx:2,fill:k==="rf"?"var(--line)":"var(--steel)",opacity:k==="rf"?.9:1}));
+    else if(k==="c")svg.appendChild(el("circle",{cx:v[0],cy:v[1],r:v[2],fill:"none",stroke:"var(--steel)","stroke-width":v[3]||2}));
+    else if(k==="t"){const tx=el("text",{x:v[0],y:v[1],fill:"var(--accent)","font-family":"IBM Plex Mono, monospace","font-size":15,"font-weight":500});tx.textContent=v[2];svg.appendChild(tx);}
+  });
+  const ghost=el("g");svg.appendChild(ghost);drawPose(ghost,ex.a,true);
+  ex.m.forEach(m=>svg.appendChild(el("line",{x1:m[0],y1:m[1],x2:m[2],y2:m[3],stroke:"var(--accent)","stroke-width":2,"stroke-dasharray":"4 3","marker-end":"url(#ah)"})));
+  const live=el("g");svg.appendChild(live);
+  const L=drawPose(live,ex.b,false);
+  const A=ex.a.l.map(parse),B=ex.b.l.map(parse);
+  const ok=A.length===B.length&&A.every((x,i)=>x.pts.length===B[i].pts.length);
+  svg._anim=ok?{L,A,B,ha:ex.a.h,hb:ex.b.h}:null;
+  return svg;
+}
+
+function setT(an,t){
+  an.L.nodes.forEach((n,i)=>{const p=an.A[i].pts.map((q,j)=>{const r=an.B[i].pts[j];return[q[0]+(r[0]-q[0])*t,q[1]+(r[1]-q[1])*t].map(v=>v.toFixed(1))});n.pl.setAttribute("points",ptsStr(p))});
+  an.L.head.setAttribute("cx",(an.ha[0]+(an.hb[0]-an.ha[0])*t).toFixed(1));
+  an.L.head.setAttribute("cy",(an.ha[1]+(an.hb[1]-an.ha[1])*t).toFixed(1));
+}
+
+const root=document.getElementById("groups");
+G.forEach((g,gi)=>{
+  const d=document.createElement("details");d.className="group";d.id="g"+gi;
+  const sets=g.ex.length*2+"–"+g.ex.length*3;
+  d.innerHTML=`<summary><span class="num">${gi+1}</span><span style="min-width:0"><div class="gname">${g.n}</div><div class="gsub">${g.sub}</div></span><span class="gmeta">${g.ex.length} ex · ${sets} <span class="lbl">sets</span><span class="chev" aria-hidden="true">›</span></span></summary><div class="panel"><div class="cards"></div></div>`;
+  const cards=d.querySelector(".cards");
+  g.ex.forEach(ex=>{
+    const c=document.createElement("article");c.className="card";c.tabIndex=0;c.setAttribute("role","button");c.setAttribute("aria-label",ex.name+": log weight");
+    const f=document.createElement("div");f.className="fig";f.appendChild(figure(ex));c.appendChild(f);
+    const b=document.createElement("div");b.className="body";
+    b.innerHTML=`<div class="ename">${ex.name}</div><div class="target">${ex.t}</div>
+      <div class="dose"><span class="main">${ex.s.replace(/^2 × /,"2–3 × ")}</span><span>Rest ${ex.r}</span><span>RIR 1–2</span></div>
+      <ul class="cues">${ex.c.map(x=>`<li>${x}</li>`).join("")}</ul>
+      <a class="vid" href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.q)}" target="_blank" rel="noopener">Watch form videos ↗</a>`;
+    c.appendChild(b);cards.appendChild(c);
+    c.addEventListener("click",e=>{if(e.target.closest("a"))return;openSheet(ex.name,slug(ex.name),c)});
+    c.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&!e.target.closest("a")){e.preventDefault();openSheet(ex.name,slug(ex.name),c)}});
+  });
+  root.appendChild(d);
+});
+
+const W={
+ bike:{name:"Easy cardio on bike",
+  eq:[["c",124,128,20,3],["l",88,100,110,100,5],["l",100,102,124,128,4],["l",124,128,150,72,4],["l",144,68,160,68,5],["t",172,44,"easy"]],
+  a:{h:[117,46],l:["100,100 113,58","113,58 132,66 150,68","100,100 134,94 130,114","100,100 114,122 118,144"]},
+  b:{h:[117,46],l:["100,100 113,58","113,58 132,66 150,68","100,100 114,122 118,144","100,100 134,94 130,114"]},m:[[88,146,148,146]]},
+ squat:{name:"Bodyweight squat",eq:[],
+  a:{h:[120,28],l:["120,88 120,40","120,44 122,66 124,86","120,88 124,118 120,148 134,148"]},
+  b:{h:[117,56],l:["100,112 114,68","114,70 138,72 160,72","100,112 130,112 120,148 134,148"]},m:[[176,40,176,92]]},
+ circles:{name:"Arm circles",eq:[],
+  a:{h:[120,40],l:["104,56 136,56","120,56 120,104","110,104 130,104","112,104 108,148","128,104 132,148","104,56 92,34 86,12","136,56 148,34 154,12"]},
+  b:{h:[120,40],l:["104,56 136,56","120,56 120,104","110,104 130,104","112,104 108,148","128,104 132,148","104,56 90,76 84,98","136,56 150,76 156,98"]},m:[[70,20,70,90],[170,20,170,90]]},
+ facepull:{name:"Face pull",eq:[["r",196,4,8,146],["c",190,40,4]],
+  a:{h:[120,28],l:["120,88 120,40","120,44 148,44 176,42","120,88 116,118 108,148 122,148","~176,42 190,40"]},
+  b:{h:[120,28],l:["120,88 120,40","120,44 142,30 130,22","120,88 116,118 108,148 122,148","~130,22 190,40"]},m:[[172,60,136,60]]},
+ hinge:{name:"Hip hinge",eq:[],
+  a:{h:[120,28],l:["120,88 120,40","120,46 112,66 118,86","120,88 122,118 120,148 134,148"]},
+  b:{h:[152,54],l:["96,90 140,62","138,64 122,80 100,88","96,90 112,118 116,148 130,148"]},m:[[100,70,74,70]]},
+ ramp:{...G[1].ex[0],name:"Ramp-up set at half weight",eq:[...G[1].ex[0].eq,["t",160,34,"~50%"],["t",160,54,"× 10"]]}
+};
+document.querySelectorAll("[data-w]").forEach(f=>f.appendChild(figure(W[f.dataset.w])));
+const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+// cycle: lift 1.2s, hold .5s, lower 2s (slow eccentric), hold .6s
+function phase(ms){const T=4300,u=ms%T;if(u<1200)return ease(u/1200);if(u<1700)return 1;if(u<3700)return 1-ease((u-1700)/2000);return 0}
+function loop(ms){
+  if(!reduce){const t=phase(ms);document.querySelectorAll("details[open] svg").forEach(s=>{if(s._anim)setT(s._anim,t)})}
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+try{const o=JSON.parse(localStorage.getItem("open-groups")||"[]");o.forEach(i=>{const d=document.getElementById("g"+i);if(d)d.open=true})}catch(e){}
+root.addEventListener("toggle",()=>{try{localStorage.setItem("open-groups",JSON.stringify([...document.querySelectorAll("details.group")].map((d,i)=>d.open?i:-1).filter(i=>i>=0)))}catch(e){}},true);
+</script>
+
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-bg" id="shBg"></div>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="shTitle">
+    <button class="sh-x" id="shX" aria-label="Close">&times;</button>
+    <div class="sh-ex" id="shTitle"></div>
+    <div class="sh-last" id="shLast"></div>
+    <div class="sh-fields">
+      <label>Weight (kg)<input id="shW" type="number" inputmode="decimal" step="0.5" min="0" max="1000" placeholder="0"></label>
+      <label>Reps<input id="shR" type="number" inputmode="numeric" step="1" min="1" max="200" placeholder="0"></label>
+    </div>
+    <button class="sh-save" id="shSave">Save new record</button>
+    <div class="sh-msg" id="shMsg" role="status" aria-live="polite"></div>
+    <div class="sh-hist-h">History</div>
+    <ol class="sh-hist" id="shHist"></ol>
+  </div>
+</div>
+<script>
+const SUPABASE_URL="https://kkdwsbbvgvklxqqumcdw.supabase.co";
+const ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZHdzYmJ2Z3ZrbHhxcXVtY2R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MTk0NzYsImV4cCI6MjA5NzQ5NTQ3Nn0.EQlC5F3LzU0uMsRlBcgBPxZg_vWiNXuRIo1J9urTo_Q";
+const sb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,ANON_KEY):null;
+const $=id=>document.getElementById(id);
+let shKey=null, shTok=0, shRows=[], shOpener=null;
+
+function fmtKg(n){return String(+(+n).toFixed(2));}
+function fmtDate(d){
+  const p=String(d).split("-").map(Number);
+  return new Date(Date.UTC(p[0],p[1]-1,p[2])).toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+}
+async function session(){
+  if(!sb)return null;
+  try{const r=await sb.auth.getSession();return r.data.session||null;}catch(e){return null;}
+}
+function setMsg(t,err){const m=$("shMsg");m.textContent=t||"";m.classList.toggle("err",!!err);}
+function renderHist(){
+  const ol=$("shHist");ol.textContent="";
+  if(!shRows.length){const li=document.createElement("li");li.style.display="block";li.className="d";li.textContent="No records yet.";ol.appendChild(li);return;}
+  shRows.forEach((r,i)=>{
+    const li=document.createElement("li");
+    const d=document.createElement("span");d.className="d";d.textContent=fmtDate(r.logged_on);
+    const v=document.createElement("span");v.className="v";v.textContent=fmtKg(r.weight_kg)+" kg \u00D7 "+r.reps;
+    const dl=document.createElement("span");dl.className="dl";
+    const prev=shRows[i+1];
+    if(prev){const diff=+(r.weight_kg-prev.weight_kg).toFixed(2);
+      if(diff>0){dl.textContent="+"+fmtKg(diff);dl.classList.add("up");}
+      else if(diff<0){dl.textContent="\u2212"+fmtKg(-diff);dl.classList.add("dn");}
+      else dl.textContent="=";}
+    li.append(d,v,dl);ol.appendChild(li);
+  });
+}
+function renderLast(){
+  const l=$("shLast");
+  if(!shRows.length){l.textContent="No record yet. Enter your starting weight.";return;}
+  const r=shRows[0];l.textContent="";
+  const b=document.createElement("b");b.textContent=fmtKg(r.weight_kg)+" kg \u00D7 "+r.reps;
+  l.append("Last time: ",b," on "+fmtDate(r.logged_on));
+}
+async function openSheet(name,key,opener){
+  shKey=key;shOpener=opener||null;const tok=++shTok;
+  $("shTitle").textContent=name;$("shLast").textContent="Loading\u2026";$("shHist").textContent="";
+  $("shW").value="";$("shR").value="";setMsg("");$("shSave").disabled=true;shRows=[];
+  $("sheet").hidden=false;document.documentElement.classList.add("lock");
+  const s=await session();
+  if(tok!==shTok)return;
+  if(!s){
+    $("shLast").textContent="";
+    const m=$("shMsg");m.textContent="";m.classList.remove("err");
+    m.append("Sign in through the ");const a=document.createElement("a");a.href="../";a.textContent="Bat Cave";m.append(a," to log weights.");
+    return;
+  }
+  const {data,error}=await sb.from("training_log").select("weight_kg,reps,logged_on,created_at").eq("exercise_key",key).order("created_at",{ascending:false}).limit(20);
+  if(tok!==shTok)return;
+  if(error){$("shLast").textContent="";setMsg("Couldn\u2019t load history: "+error.message,true);return;}
+  shRows=data||[];renderLast();renderHist();
+  if(shRows[0]){$("shW").value=fmtKg(shRows[0].weight_kg);$("shR").value=shRows[0].reps;}
+  $("shSave").disabled=false;$("shW").focus();$("shW").select();
+}
+function closeSheet(){
+  shTok++;$("sheet").hidden=true;document.documentElement.classList.remove("lock");
+  if(shOpener&&shOpener.focus)shOpener.focus();
+}
+async function saveRecord(){
+  const w=parseFloat($("shW").value), r=parseInt($("shR").value,10);
+  if(!isFinite(w)||w<0||w>1000){setMsg("Enter a weight in kg.",true);return;}
+  if(!Number.isInteger(r)||r<1||r>200){setMsg("Enter the reps (1 or more).",true);return;}
+  const tok=shTok,key=shKey;$("shSave").disabled=true;setMsg("Saving\u2026");
+  const {data,error}=await sb.from("training_log").insert({exercise_key:key,weight_kg:w,reps:r}).select("weight_kg,reps,logged_on,created_at").single();
+  if(tok!==shTok)return;
+  $("shSave").disabled=false;
+  if(error){setMsg("Save failed: "+error.message,true);return;}
+  shRows.unshift(data);renderLast();renderHist();setMsg("Saved.");
+}
+$("shSave").addEventListener("click",saveRecord);
+$("shX").addEventListener("click",closeSheet);
+$("shBg").addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheet").hidden)closeSheet();});
+</script>
+</body>
+</html>
