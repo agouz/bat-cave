@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="Sticker Ledger"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&display=swap">
 <link rel="manifest" href="manifest.json"/>
 <title>Sticker Ledger</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -123,11 +124,8 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:u
 .di-cnt{background:var(--amber);color:var(--ink);border-radius:5px;font-weight:800;font-size:12px;font-family:monospace;padding:3px 8px;flex-shrink:0;}
 .di-del{background:none;border:none;color:var(--parchment-dim);font-size:15px;cursor:pointer;padding:4px;flex-shrink:0;}
 .empty-info{text-align:center;padding:32px 16px;color:var(--parchment-dim);font-size:13px;line-height:1.6;}
-.cave-back{display:flex;align-items:center;gap:12px;margin-top:14px;padding:16px;background:var(--ink-2);border:1px solid var(--hairline);border-radius:16px;text-decoration:none;color:inherit;transition:transform .1s;min-height:56px;}
-.cave-back:active{transform:scale(.98);}
-.cave-back .cb-ic{font-size:24px;}
-.cave-back .cb-nm{flex:1;font-weight:700;font-size:15px;}
-.cave-back .cb-ch{font-size:22px;color:var(--parchment-dim);}
+.cave-back{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:20px;min-height:64px;border-radius:18px;background:var(--ink-2);border:1px solid var(--hairline);font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--parchment,#F1EBDD);transition:transform .1s;}
+.cave-back:active{transform:scale(.97);}
 </style>
 </head>
 <body>
@@ -135,10 +133,10 @@ select{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:u
 <div id="app">
   <!-- PICKER -->
   <div id="pickerView">
-    <div class="pk-hdr"><h1>Sticker Ledger</h1><span><a class="logout-btn" href="https://agouz.github.io/bat-cave/" style="text-decoration:none;margin-right:10px;padding:10px 6px;">&#129415; Bat Cave</a><button class="logout-btn" onclick="doLogout()" style="padding:10px 6px;">Sign out</button></span></div>
+    <div class="pk-hdr"><h1>Sticker Ledger</h1><span><a class="logout-btn" href="https://agouz.github.io/bat-cave/" style="text-decoration:none;margin-right:10px;padding:10px 6px;">&#8592; Bat Cave</a><button class="logout-btn" onclick="doLogout()" style="padding:10px 6px;">Sign out</button></span></div>
     <p class="pk-sub">Choose an album to track</p>
     <div class="album-grid" id="albumGrid"></div>
-    <a class="cave-back" href="https://agouz.github.io/bat-cave/"><span class="cb-ic">&#129415;</span><span class="cb-nm">Back to the Bat Cave</span><span class="cb-ch">&#8250;</span></a>
+    <a class="cave-back" href="https://agouz.github.io/bat-cave/"><span>&#8592;</span> Back</a>
   </div>
   <!-- ALBUM VIEW -->
   <div id="albumView">

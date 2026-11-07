@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#141917" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
 <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&display=swap">
 <title>Full Body Machine Session</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -118,6 +119,8 @@ ol.sh-hist .dl{font-family:var(--mono);font-size:12px;min-width:5.5ch;text-align
 ol.sh-hist .dl.up{color:#2E8B57}
 ol.sh-hist .dl.dn{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){.sheet-bg,.sheet-card{animation:none}.cards .card{transition:none}}
+a.cave-back{display:flex;align-items:center;justify-content:center;gap:10px;margin:24px 0 8px;min-height:64px;border-radius:18px;background:var(--card);border:1px solid var(--line);font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--ink)}
+a.cave-back:active{transform:scale(.97)}
 </style>
 </head>
 <body>
@@ -147,6 +150,7 @@ ol.sh-hist .dl.dn{color:var(--accent)}
   </div>
 </details>
 <div class="groups" id="groups"></div>
+<a class="cave-back" href="../"><span>&#8592;</span> Back</a>
 <footer><b>Tap an exercise</b> to log your weight and reps. Diagrams are simplified side or front views: faint figure = start, solid figure = finish. Use the video link for exact form.</footer>
 </div>
 
