@@ -111,13 +111,23 @@ html.lock{overflow:hidden}
 .sh-msg.err{color:var(--accent)}
 .sh-msg a{color:var(--accent)}
 .sh-hist-h{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-ol.sh-hist{margin:0;padding:0;list-style:none;display:grid;gap:6px}
-ol.sh-hist li{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:baseline;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);font-variant-numeric:tabular-nums}
-ol.sh-hist .d{color:var(--muted);font-size:13px}
-ol.sh-hist .v{font-family:var(--mono);font-size:14px}
-ol.sh-hist .dl{font-family:var(--mono);font-size:12px;min-width:5.5ch;text-align:right;color:var(--muted)}
-ol.sh-hist .dl.up{color:#2E8B57}
-ol.sh-hist .dl.dn{color:var(--accent)}
+.sh-steps{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:-6px}
+.sh-steps>div{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sh-steps button{min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:14px;cursor:pointer}
+.sh-steps button:active{transform:scale(.96)}
+.sh-chart{width:100%;height:auto;display:block;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.sh-chart[hidden]{display:none}
+.sh-pb{display:inline-block;margin-left:8px;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;font-family:var(--mono);font-size:11px;letter-spacing:.06em;vertical-align:middle}
+.sh-hist{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.sh-day{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);display:grid;gap:6px}
+.sh-dh{display:flex;align-items:baseline;gap:10px;font-variant-numeric:tabular-nums}
+.sh-dh .d{flex:1;font-size:13px;color:var(--muted)}
+.sh-dh .dl{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.sh-dh .dl.up{color:#2E8B57}.sh-dh .dl.dn{color:var(--accent)}
+.sh-set{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
+.sh-set .v{flex:1}
+.sh-del{min-width:44px;min-height:44px;border:none;background:none;color:var(--muted);font-size:20px;cursor:pointer;border-radius:8px;font-family:var(--mono)}
+.sh-del.arm{color:#fff;background:var(--accent);font-size:13px;padding:0 10px}
 @media (prefers-reduced-motion:reduce){.sheet-bg,.sheet-card{animation:none}.cards .card{transition:none}}
 a.cave-back{display:flex;align-items:center;justify-content:center;gap:10px;margin:24px 0 8px;min-height:64px;border-radius:18px;background:var(--card);border:1px solid var(--line);font-family:"Big Shoulders Display","Arial Narrow",sans-serif;font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--ink)}
 a.cave-back:active{transform:scale(.97)}
@@ -366,8 +376,10 @@ root.addEventListener("toggle",()=>{try{localStorage.setItem("open-groups",JSON.
       <label>Weight (kg)<input id="shW" type="number" inputmode="decimal" step="0.5" min="0" max="1000" placeholder="0"></label>
       <label>Reps<input id="shR" type="number" inputmode="numeric" step="1" min="1" max="200" placeholder="0"></label>
     </div>
-    <button class="sh-save" id="shSave">Save new record</button>
+    <div class="sh-steps"><div><button type="button" data-w="-2.5">&minus;2.5</button><button type="button" data-w="2.5">+2.5</button></div><div><button type="button" data-r="-1">&minus;1</button><button type="button" data-r="1">+1</button></div></div>
+    <button class="sh-save" id="shSave">Save set</button>
     <div class="sh-msg" id="shMsg" role="status" aria-live="polite"></div>
+    <svg id="shChart" class="sh-chart" viewBox="0 0 300 96" hidden role="img" aria-label="Top weight per day"></svg>
     <div class="sh-hist-h">History</div>
     <ol class="sh-hist" id="shHist"></ol>
   </div>
@@ -377,63 +389,94 @@ const SUPABASE_URL="https://kkdwsbbvgvklxqqumcdw.supabase.co";
 const ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZHdzYmJ2Z3ZrbHhxcXVtY2R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MTk0NzYsImV4cCI6MjA5NzQ5NTQ3Nn0.EQlC5F3LzU0uMsRlBcgBPxZg_vWiNXuRIo1J9urTo_Q";
 const sb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,ANON_KEY):null;
 const $=id=>document.getElementById(id);
-let shKey=null, shTok=0, shRows=[], shOpener=null;
+let shKey=null, shTok=0, shRows=[], shOpener=null, armed=null, armTimer=0;
 
-function fmtKg(n){return String(+(+n).toFixed(2));}
-function fmtDate(d){
-  const p=String(d).split("-").map(Number);
-  return new Date(Date.UTC(p[0],p[1]-1,p[2])).toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
-}
-async function session(){
-  if(!sb)return null;
-  try{const r=await sb.auth.getSession();return r.data.session||null;}catch(e){return null;}
-}
+const fmtKg=n=>String(+(+n).toFixed(2));
+function fmtDate(d){const p=String(d).split("-").map(Number);
+  return new Date(Date.UTC(p[0],p[1]-1,p[2])).toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});}
+async function session(){if(!sb)return null;try{const r=await sb.auth.getSession();return r.data.session||null;}catch(e){return null;}}
 function setMsg(t,err){const m=$("shMsg");m.textContent=t||"";m.classList.toggle("err",!!err);}
+
+// group sets by day, newest day first; sets inside a day oldest first
+function groupDays(){
+  const map=new Map();
+  shRows.forEach(r=>{if(!map.has(r.logged_on))map.set(r.logged_on,[]);map.get(r.logged_on).push(r);});
+  const days=[...map.entries()].map(([date,sets])=>{
+    sets.sort((x,y)=>x.created_at<y.created_at?-1:1);
+    return {date,sets,top:Math.max(...sets.map(s=>+s.weight_kg))};
+  }).sort((x,y)=>x.date<y.date?1:-1);
+  return days;
+}
+function renderChart(days){
+  const svg=$("shChart");svg.textContent="";
+  const pts=days.slice(0,30).reverse();
+  if(pts.length<2){svg.setAttribute("hidden","");return;}
+  svg.removeAttribute("hidden");
+  const NS="http://www.w3.org/2000/svg",W=300,H=96,P=16;
+  const vals=pts.map(p=>p.top),mn=Math.min(...vals),mx=Math.max(...vals),rg=(mx-mn)||1;
+  const X=i=>P+(W-2*P)*(i/(pts.length-1)),Y=v=>H-P-(H-2*P)*((v-mn)/rg);
+  const mk=(n,at)=>{const e=document.createElementNS(NS,n);for(const k in at)e.setAttribute(k,at[k]);svg.appendChild(e);return e;};
+  mk("polyline",{points:pts.map((p,i)=>X(i)+","+Y(p.top)).join(" "),fill:"none",stroke:"var(--accent)","stroke-width":2,"stroke-linejoin":"round"});
+  pts.forEach((p,i)=>mk("circle",{cx:X(i),cy:Y(p.top),r:3,fill:"var(--accent)"}));
+  const lb=(x,y,txt,an)=>{const e=mk("text",{x,y,fill:"var(--muted)","font-size":10,"text-anchor":an,"font-family":"monospace"});e.textContent=txt;};
+  lb(P,12,fmtKg(mx)+" kg","start");lb(P,H-3,fmtKg(mn)+" kg","start");
+}
 function renderHist(){
-  const ol=$("shHist");ol.textContent="";
-  if(!shRows.length){const li=document.createElement("li");li.style.display="block";li.className="d";li.textContent="No records yet.";ol.appendChild(li);return;}
-  shRows.forEach((r,i)=>{
-    const li=document.createElement("li");
-    const d=document.createElement("span");d.className="d";d.textContent=fmtDate(r.logged_on);
-    const v=document.createElement("span");v.className="v";v.textContent=fmtKg(r.weight_kg)+" kg \u00D7 "+r.reps;
+  const days=groupDays(),ol=$("shHist");ol.textContent="";
+  renderChart(days);
+  if(!days.length){const li=document.createElement("li");li.className="sh-hist-h";li.textContent="No records yet.";ol.appendChild(li);return;}
+  const mx=Math.max(...days.map(d=>d.top));
+  let pbDate=null;for(let i=days.length-1;i>=0;i--){if(days[i].top===mx){pbDate=days[i].date;break;}}
+  days.forEach((d,i)=>{
+    const li=document.createElement("li");li.className="sh-day";
+    const h=document.createElement("div");h.className="sh-dh";
+    const ds=document.createElement("span");ds.className="d";ds.textContent=fmtDate(d.date);
+    if(d.date===pbDate&&days.length>1){const pb=document.createElement("span");pb.className="sh-pb";pb.textContent="PB";ds.appendChild(pb);}
     const dl=document.createElement("span");dl.className="dl";
-    const prev=shRows[i+1];
-    if(prev){const diff=+(r.weight_kg-prev.weight_kg).toFixed(2);
+    const prev=days[i+1];
+    if(prev){const diff=+(d.top-prev.top).toFixed(2);
       if(diff>0){dl.textContent="+"+fmtKg(diff);dl.classList.add("up");}
       else if(diff<0){dl.textContent="\u2212"+fmtKg(-diff);dl.classList.add("dn");}
       else dl.textContent="=";}
-    li.append(d,v,dl);ol.appendChild(li);
+    h.append(ds,dl);li.appendChild(h);
+    d.sets.forEach((s,k)=>{
+      const row=document.createElement("div");row.className="sh-set";
+      const v=document.createElement("span");v.className="v";v.textContent="Set "+(k+1)+"  "+fmtKg(s.weight_kg)+" kg \u00D7 "+s.reps;
+      const x=document.createElement("button");x.type="button";x.className="sh-del";x.setAttribute("aria-label","Delete this set");
+      x.textContent=(armed===s.id)?"Delete?":"\u00D7";if(armed===s.id)x.classList.add("arm");
+      x.addEventListener("click",()=>delSet(s.id));
+      row.append(v,x);li.appendChild(row);
+    });
+    ol.appendChild(li);
   });
 }
 function renderLast(){
   const l=$("shLast");
   if(!shRows.length){l.textContent="No record yet. Enter your starting weight.";return;}
-  const r=shRows[0];l.textContent="";
+  const r=shRows.slice().sort((x,y)=>x.created_at<y.created_at?1:-1)[0];l.textContent="";
   const b=document.createElement("b");b.textContent=fmtKg(r.weight_kg)+" kg \u00D7 "+r.reps;
-  l.append("Last time: ",b," on "+fmtDate(r.logged_on));
+  l.append("Last set: ",b," on "+fmtDate(r.logged_on));
 }
 async function openSheet(name,key,opener){
-  shKey=key;shOpener=opener||null;const tok=++shTok;
-  $("shTitle").textContent=name;$("shLast").textContent="Loading\u2026";$("shHist").textContent="";
+  shKey=key;shOpener=opener||null;const tok=++shTok;armed=null;
+  $("shTitle").textContent=name;$("shLast").textContent="Loading\u2026";$("shHist").textContent="";$("shChart").setAttribute("hidden","");
   $("shW").value="";$("shR").value="";setMsg("");$("shSave").disabled=true;shRows=[];
   $("sheet").hidden=false;document.documentElement.classList.add("lock");
   const s=await session();
   if(tok!==shTok)return;
   if(!s){
-    $("shLast").textContent="";
-    const m=$("shMsg");m.textContent="";m.classList.remove("err");
-    m.append("Sign in through the ");const a=document.createElement("a");a.href="../";a.textContent="Bat Cave";m.append(a," to log weights.");
-    return;
+    $("shLast").textContent="";const m=$("shMsg");m.textContent="";m.classList.remove("err");
+    m.append("Sign in through the ");const a=document.createElement("a");a.href="../";a.textContent="Bat Cave";m.append(a," to log weights.");return;
   }
-  const {data,error}=await sb.from("training_log").select("weight_kg,reps,logged_on,created_at").eq("exercise_key",key).order("created_at",{ascending:false}).limit(20);
+  const {data,error}=await sb.from("training_log").select("id,weight_kg,reps,logged_on,created_at").eq("exercise_key",key).order("created_at",{ascending:false}).limit(300);
   if(tok!==shTok)return;
   if(error){$("shLast").textContent="";setMsg("Couldn\u2019t load history: "+error.message,true);return;}
   shRows=data||[];renderLast();renderHist();
-  if(shRows[0]){$("shW").value=fmtKg(shRows[0].weight_kg);$("shR").value=shRows[0].reps;}
+  const last=shRows[0];if(last){$("shW").value=fmtKg(last.weight_kg);$("shR").value=last.reps;}
   $("shSave").disabled=false;$("shW").focus();$("shW").select();
 }
 function closeSheet(){
-  shTok++;$("sheet").hidden=true;document.documentElement.classList.remove("lock");
+  shTok++;armed=null;clearTimeout(armTimer);$("sheet").hidden=true;document.documentElement.classList.remove("lock");
   if(shOpener&&shOpener.focus)shOpener.focus();
 }
 async function saveRecord(){
@@ -441,12 +484,27 @@ async function saveRecord(){
   if(!isFinite(w)||w<0||w>1000){setMsg("Enter a weight in kg.",true);return;}
   if(!Number.isInteger(r)||r<1||r>200){setMsg("Enter the reps (1 or more).",true);return;}
   const tok=shTok,key=shKey;$("shSave").disabled=true;setMsg("Saving\u2026");
-  const {data,error}=await sb.from("training_log").insert({exercise_key:key,weight_kg:w,reps:r}).select("weight_kg,reps,logged_on,created_at").single();
+  const {data,error}=await sb.from("training_log").insert({exercise_key:key,weight_kg:w,reps:r}).select("id,weight_kg,reps,logged_on,created_at").single();
   if(tok!==shTok)return;
   $("shSave").disabled=false;
   if(error){setMsg("Save failed: "+error.message,true);return;}
   shRows.unshift(data);renderLast();renderHist();setMsg("Saved.");
 }
+async function delSet(id){
+  if(armed!==id){armed=id;clearTimeout(armTimer);armTimer=setTimeout(()=>{armed=null;renderHist();},3000);renderHist();return;}
+  clearTimeout(armTimer);armed=null;const tok=shTok;setMsg("Deleting\u2026");
+  const {error}=await sb.from("training_log").delete().eq("id",id);
+  if(tok!==shTok)return;
+  if(error){setMsg("Delete failed: "+error.message,true);renderHist();return;}
+  shRows=shRows.filter(r=>r.id!==id);renderLast();renderHist();setMsg("Deleted.");
+}
+function step(inp,delta,min,max,dec){
+  const cur=parseFloat(inp.value);const v=Math.min(max,Math.max(min,(isFinite(cur)?cur:0)+delta));
+  inp.value=String(+v.toFixed(dec));
+}
+document.querySelectorAll(".sh-steps button").forEach(b=>b.addEventListener("click",()=>{
+  if(b.dataset.w)step($("shW"),parseFloat(b.dataset.w),0,1000,2);else step($("shR"),parseInt(b.dataset.r,10),1,200,0);
+}));
 $("shSave").addEventListener("click",saveRecord);
 $("shX").addEventListener("click",closeSheet);
 $("shBg").addEventListener("click",closeSheet);
