@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07080A">
+<title>Watch List</title>
+<link rel="apple-touch-icon" href="../apple-touch-icon.png?v=1">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Spectral:wght@400;500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<style>
+:root{--bg:#07080A;--stone:#12151A;--stone-2:#1A1E25;--line:#2A303A;--text:#EFE9DA;--dim:#8D95A3;--gold:#D9A441;--ember:#C8553D;
+  --display:'Big Shoulders Display','Arial Narrow',sans-serif;--body:'Spectral',Georgia,serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:17px;min-height:100%}
+body{background:radial-gradient(120% 60% at 50% -10%,#1b2230 0,transparent 60%),repeating-linear-gradient(135deg,rgba(255,255,255,.012) 0 2px,transparent 2px 6px),var(--bg);
+  padding:env(safe-area-inset-top) 16px calc(32px + env(safe-area-inset-bottom))}
+[hidden]{display:none!important}
+.wrap{max-width:560px;margin:0 auto}
+header{padding:18px 0 10px}
+.eyebrow{font-family:var(--display);font-weight:700;letter-spacing:.3em;font-size:13px;color:var(--dim);text-transform:uppercase}
+h1{font-family:var(--display);font-weight:800;font-size:56px;line-height:.95;margin:4px 0 0;text-transform:uppercase;letter-spacing:.01em}
+h1 span{color:var(--gold)}
+.sbox{position:sticky;top:0;z-index:20;padding:10px 0 12px;background:linear-gradient(var(--bg) 70%,transparent)}
+.sin{width:100%;min-height:56px;border-radius:16px;border:1px solid var(--line);background:var(--stone);color:var(--text);font:500 18px var(--body);padding:0 18px 0 48px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%238D95A3' stroke-width='2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");background-repeat:no-repeat;background-position:16px center}
+.sin:focus{outline:2px solid var(--gold);outline-offset:1px}
+.sin::placeholder{color:var(--dim)}
+.sug{position:absolute;left:0;right:0;top:calc(100% - 4px);background:var(--stone-2);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.6)}
+.sug button{display:flex;gap:12px;align-items:center;width:100%;min-height:64px;padding:8px 12px;border:none;border-bottom:1px solid var(--line);background:none;color:var(--text);text-align:left;cursor:pointer;font:inherit}
+.sug button:last-child{border-bottom:none}
+.sug button:active,.sug button:focus-visible{background:#232932;outline:none}
+.sug .note{padding:16px;color:var(--dim);font-size:15px}
+.thumb{width:40px;height:60px;border-radius:5px;background:var(--stone) center/cover;border:1px solid var(--line);flex:none}
+.sug .tt{font-weight:600;line-height:1.2}
+.sug .mt{font-size:13px;color:var(--dim);font-family:var(--display);letter-spacing:.12em;text-transform:uppercase}
+.count{font-family:var(--display);letter-spacing:.2em;text-transform:uppercase;font-size:13px;color:var(--dim);margin:14px 2px 8px}
+ul.list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.it{display:flex;align-items:center;gap:10px;background:var(--stone);border:1px solid var(--line);border-radius:16px;padding:8px 6px 8px 4px;min-height:84px}
+.it.sortable-ghost{opacity:.35}.it.sortable-chosen{border-color:var(--gold)}
+.grip{width:40px;min-height:68px;display:grid;place-items:center;color:var(--dim);touch-action:none;cursor:grab;flex:none;border:none;background:none}
+.grip svg{width:20px;height:20px}
+.open{flex:1;min-width:0;display:flex;gap:12px;align-items:center;border:none;background:none;color:var(--text);text-align:left;cursor:pointer;font:inherit;padding:0;min-height:68px}
+.it .thumb{width:46px;height:69px}
+.it .ti{font-weight:600;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.it .me{font-size:13px;color:var(--dim);font-family:var(--display);letter-spacing:.12em;text-transform:uppercase;margin-top:3px}
+.del{min-width:48px;min-height:48px;border:none;background:none;color:var(--dim);font-size:22px;cursor:pointer;border-radius:10px;font-family:var(--display)}
+.del.arm{background:var(--ember);color:#fff;font-size:14px;letter-spacing:.08em;padding:0 12px}
+.empty{padding:36px 12px;text-align:center;color:var(--dim)}
+.msg{margin:10px 0;color:var(--dim);font-size:15px}.msg.err{color:#E58A74}.msg a{color:var(--gold)}
+.back{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:26px;min-height:64px;border-radius:18px;background:var(--stone-2);border:1px solid var(--line);
+  font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--text)}
+.back:active{transform:scale(.97)}
+.attr{margin-top:22px;font-size:12px;color:var(--dim);text-align:center;line-height:1.5}
+/* detail sheet */
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sbg{position:absolute;inset:0;background:rgba(0,0,0,.62);animation:fade .2s both}
+.card{position:relative;width:100%;max-width:560px;max-height:90vh;overflow:auto;background:var(--stone);border:1px solid var(--line);border-bottom:none;border-radius:20px 20px 0 0;
+  padding:20px 18px calc(22px + env(safe-area-inset-bottom));animation:up .28s cubic-bezier(.2,.8,.2,1) both;display:grid;gap:14px}
+@media(min-width:640px){.sheet{align-items:center}.card{border-radius:20px;border-bottom:1px solid var(--line)}}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}@keyframes fade{from{opacity:0}to{opacity:1}}
+.x{position:absolute;right:6px;top:6px;width:48px;height:48px;border:none;background:none;color:var(--dim);font-size:30px;cursor:pointer;z-index:2}
+.dh{display:flex;gap:16px;padding-right:40px}
+.dh .thumb{width:100px;height:150px;border-radius:8px}
+.dt{font-family:var(--display);font-weight:800;font-size:32px;line-height:1;text-transform:uppercase}
+.dm{margin-top:8px;color:var(--dim);font-size:14px;line-height:1.5}
+.tag{font-style:italic;color:var(--gold)}
+.ov{line-height:1.5}
+.cast{font-size:14px;color:var(--dim)}
+.act{min-height:56px;border:none;border-radius:14px;background:linear-gradient(180deg,#E8B753,#C9922F);color:#16110A;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.act:disabled{opacity:.45;cursor:not-allowed}
+.act.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.sbg,.card{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="eyebrow">The Bat Cave</div><h1>Watch <span>List</span></h1></header>
+  <div id="gate" class="msg" hidden></div>
+  <div id="app" hidden>
+    <div class="sbox" style="position:sticky"><div style="position:relative">
+      <input id="q" class="sin" type="search" placeholder="Add a movie or TV show…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Search movies and TV shows">
+      <div id="sug" class="sug" role="listbox" hidden></div>
+    </div></div>
+    <div id="count" class="count"></div>
+    <ul id="list" class="list"></ul>
+    <div id="empty" class="empty" hidden>Nothing here yet. Search above to add your first one.</div>
+    <div id="msg" class="msg" role="status" aria-live="polite"></div>
+  </div>
+  <a class="back" href="../"><span>&#8592;</span> Back</a>
+  <div class="attr">This product uses the TMDB API but is not endorsed or certified by TMDB.</div>
+</div>
+
+<div id="sheet" class="sheet" hidden>
+  <div class="sbg" id="sbg"></div>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="dt">
+    <button class="x" id="sx" aria-label="Close">&times;</button>
+    <div class="dh"><div class="thumb" id="dp"></div><div><div class="dt" id="dt"></div><div class="dm" id="dm"></div></div></div>
+    <div class="tag" id="dtag"></div>
+    <div class="ov" id="dov"></div>
+    <div class="cast" id="dcast"></div>
+    <div class="msg" id="dmsg" role="status" aria-live="polite"></div>
+    <button class="act" id="dact"></button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL="https://kkdwsbbvgvklxqqumcdw.supabase.co";
+const ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZHdzYmJ2Z3ZrbHhxcXVtY2R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MTk0NzYsImV4cCI6MjA5NzQ5NTQ3Nn0.EQlC5F3LzU0uMsRlBcgBPxZg_vWiNXuRIo1J9urTo_Q";
+const sb=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,ANON_KEY):null;
+const $=id=>document.getElementById(id);
+const IMG="https://image.tmdb.org/t/p/";
+let items=[],session=null,sortable=null,armed=null,armT=0,qTok=0,qTimer=0,cur=null,dTok=0,opener=null;
+
+function poster(el,path,size){el.style.backgroundImage=path?'url("'+IMG+size+path+'")':"";}
+function mlabel(t){return t==="tv"?"TV":"Movie";}
+function setMsg(t,err){const m=$("msg");m.textContent=t||"";m.classList.toggle("err",!!err);}
+
+async function fn(params){
+  const {data}=await sb.auth.getSession();const s=data&&data.session;
+  if(!s)throw new Error("Signed out");
+  const r=await fetch(SUPABASE_URL+"/functions/v1/tmdb?"+new URLSearchParams(params),{headers:{Authorization:"Bearer "+s.access_token,apikey:ANON_KEY}});
+  let b=null;try{b=await r.json();}catch(e){}
+  if(!r.ok)throw new Error((b&&b.error)||("Search failed ("+r.status+")"));
+  return b;
+}
+
+/* ---------- list ---------- */
+function render(){
+  const ul=$("list");ul.textContent="";
+  $("empty").hidden=items.length>0;
+  $("count").textContent=items.length?(items.length+(items.length===1?" title":" titles")+" · drag to reorder"):"";
+  items.forEach(it=>{
+    const li=document.createElement("li");li.className="it";li.dataset.id=it.id;
+    const g=document.createElement("button");g.type="button";g.className="grip";g.setAttribute("aria-label","Drag to reorder "+it.title);
+    g.innerHTML='<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="7" cy="5" r="1.6"/><circle cx="13" cy="5" r="1.6"/><circle cx="7" cy="10" r="1.6"/><circle cx="13" cy="10" r="1.6"/><circle cx="7" cy="15" r="1.6"/><circle cx="13" cy="15" r="1.6"/></svg>';
+    const o=document.createElement("button");o.type="button";o.className="open";
+    const th=document.createElement("div");th.className="thumb";poster(th,it.poster_path,"w154");
+    const tx=document.createElement("div");tx.style.minWidth="0";
+    const ti=document.createElement("div");ti.className="ti";ti.textContent=it.title;
+    const me=document.createElement("div");me.className="me";me.textContent=mlabel(it.media_type)+(it.year?" · "+it.year:"")+(it.rating?" · ★ "+it.rating:"");
+    tx.append(ti,me);o.append(th,tx);o.addEventListener("click",()=>openDetail({id:it.tmdb_id,media_type:it.media_type,title:it.title,year:it.year,poster_path:it.poster_path,overview:it.overview,rating:it.rating},o));
+    const d=document.createElement("button");d.type="button";d.className="del";d.setAttribute("aria-label","Remove "+it.title);
+    d.textContent=armed===it.id?"Remove?":"×";if(armed===it.id)d.classList.add("arm");
+    d.addEventListener("click",()=>removeItem(it.id));
+    li.append(g,o,d);ul.appendChild(li);
+  });
+  if(!sortable&&window.Sortable){
+    sortable=Sortable.create(ul,{handle:".grip",animation:160,delay:120,delayOnTouchOnly:true,touchStartThreshold:4,onEnd:persistOrder});
+  }
+}
+async function load(){
+  const {data,error}=await sb.from("watchlist").select("*").order("position",{ascending:true}).order("id",{ascending:true});
+  if(error){setMsg("Couldn’t load the list: "+error.message,true);return;}
+  items=data||[];render();
+}
+async function persistOrder(){
+  const ids=[...$("list").children].map(li=>+li.dataset.id);
+  const byId=new Map(items.map(i=>[i.id,i]));
+  const next=ids.map(id=>byId.get(id)).filter(Boolean);
+  const changes=[];
+  next.forEach((it,i)=>{if(it.position!==i+1){changes.push([it.id,i+1]);}});
+  const prev=items;items=next;next.forEach((it,i)=>{it.position=i+1;});
+  if(!changes.length)return;
+  const res=await Promise.all(changes.map(([id,p])=>sb.from("watchlist").update({position:p}).eq("id",id)));
+  const bad=res.find(r=>r.error);
+  if(bad){setMsg("Couldn’t save the new order: "+bad.error.message,true);items=prev;await load();}
+  else setMsg("");
+}
+async function removeItem(id){
+  if(armed!==id){armed=id;clearTimeout(armT);armT=setTimeout(()=>{armed=null;render();},3000);render();return;}
+  clearTimeout(armT);armed=null;
+  const {error}=await sb.from("watchlist").delete().eq("id",id);
+  if(error){setMsg("Couldn’t remove it: "+error.message,true);render();return;}
+  items=items.filter(i=>i.id!==id);items.forEach((it,i)=>it.position=i+1);render();setMsg("Removed.");
+}
+async function addItem(d){
+  const max=items.reduce((m,i)=>Math.max(m,i.position||0),0);
+  const row={tmdb_id:d.id,media_type:d.media_type,title:d.title,year:d.year||null,poster_path:d.poster_path||null,overview:d.overview||null,rating:d.rating||null,position:max+1};
+  const {data,error}=await sb.from("watchlist").insert(row).select("*").single();
+  if(error)throw error;
+  items.push(data);render();return data;
+}
+
+/* ---------- search ---------- */
+function showSug(nodes){const s=$("sug");s.textContent="";nodes.forEach(n=>s.appendChild(n));s.hidden=!nodes.length;}
+function note(t){const d=document.createElement("div");d.className="note";d.textContent=t;return d;}
+async function search(q){
+  const tok=++qTok;
+  if(q.length<2){showSug([]);return;}
+  showSug([note("Searching…")]);
+  try{
+    const r=await fn({q});
+    if(tok!==qTok)return;
+    if(!r.results.length){showSug([note("No matches.")]);return;}
+    showSug(r.results.map(x=>{
+      const b=document.createElement("button");b.type="button";b.setAttribute("role","option");
+      const th=document.createElement("div");th.className="thumb";poster(th,x.poster_path,"w92");
+      const t=document.createElement("div");
+      const a=document.createElement("div");a.className="tt";a.textContent=x.title;
+      const m=document.createElement("div");m.className="mt";m.textContent=mlabel(x.media_type)+(x.year?" · "+x.year:"");
+      t.append(a,m);b.append(th,t);
+      b.addEventListener("click",()=>{showSug([]);openDetail(x,$("q"));});
+      return b;
+    }));
+  }catch(e){if(tok!==qTok)return;showSug([note(/TMDB_API_KEY/.test(e.message)?"Search isn’t set up yet: the TMDB key is missing.":e.message)]);}
+}
+$("q").addEventListener("input",e=>{clearTimeout(qTimer);const v=e.target.value.trim();qTimer=setTimeout(()=>search(v),250);});
+$("q").addEventListener("keydown",e=>{if(e.key==="Escape"){showSug([]);}});
+document.addEventListener("click",e=>{if(!e.target.closest(".sbox"))showSug([]);});
+
+/* ---------- detail ---------- */
+function onList(d){return items.find(i=>i.media_type===d.media_type&&i.tmdb_id===d.id);}
+function fillDetail(d,full){
+  $("dt").textContent=d.title;poster($("dp"),d.poster_path,"w342");
+  const bits=[mlabel(d.media_type)];if(d.year)bits.push(d.year);
+  if(d.runtime)bits.push(d.runtime+" min");if(d.seasons)bits.push(d.seasons+(d.seasons===1?" season":" seasons"));
+  if(d.rating)bits.push("★ "+d.rating);
+  const dm=$("dm");dm.textContent=bits.join(" · ");
+  if(d.genres&&d.genres.length){dm.appendChild(document.createElement("br"));dm.append(d.genres.join(", "));}
+  $("dtag").textContent=d.tagline||"";
+  $("dov").textContent=d.overview||(full?"No description available.":"Loading…");
+  $("dcast").textContent=d.cast&&d.cast.length?"Cast: "+d.cast.join(", "):"";
+}
+function setAction(d){
+  const b=$("dact"),ex=onList(d);b.onclick=null;
+  if(ex){b.textContent="On your list ✓";b.disabled=true;b.classList.add("ghost");return;}
+  b.classList.remove("ghost");b.disabled=false;b.textContent="Add to my list";
+  b.onclick=async()=>{
+    b.disabled=true;$("dmsg").textContent="Adding…";$("dmsg").classList.remove("err");
+    try{await addItem(cur);$("dmsg").textContent="Added to the bottom of your list.";setAction(cur);setMsg("");$("q").value="";}
+    catch(e){b.disabled=false;$("dmsg").textContent=(e.code==="23505")?"Already on your list.":"Couldn’t add it: "+e.message;$("dmsg").classList.add("err");}
+  };
+}
+async function openDetail(d,from){
+  opener=from||null;cur=Object.assign({},d);const tok=++dTok;
+  fillDetail(cur,false);setAction(cur);$("dmsg").textContent="";$("dmsg").classList.remove("err");
+  $("sheet").hidden=false;document.documentElement.style.overflow="hidden";$("sx").focus();
+  try{
+    const full=await fn({type:d.media_type,id:String(d.id)});
+    if(tok!==dTok)return;
+    cur=Object.assign({},cur,full);fillDetail(cur,true);setAction(cur);
+  }catch(e){if(tok!==dTok)return;if(!cur.overview)$("dov").textContent="";}
+}
+function closeDetail(){dTok++;$("sheet").hidden=true;document.documentElement.style.overflow="";if(opener&&opener.focus)opener.focus();}
+$("sx").addEventListener("click",closeDetail);$("sbg").addEventListener("click",closeDetail);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheet").hidden)closeDetail();});
+
+/* ---------- boot ---------- */
+async function boot(){
+  if(!sb){$("gate").hidden=false;$("gate").textContent="Couldn’t load the app. Check your connection and reload.";return;}
+  let s=null;try{const r=await sb.auth.getSession();s=r.data.session;}catch(e){}
+  if(!s){
+    const g=$("gate");g.hidden=false;g.textContent="";g.append("Sign in through the ");
+    const a=document.createElement("a");a.href="../";a.textContent="Bat Cave";g.append(a," to open your list.");return;
+  }
+  session=s;$("app").hidden=false;load();
+}
+boot();
+</script>
+</body>
+</html>

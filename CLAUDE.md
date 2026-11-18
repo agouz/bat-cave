@@ -20,7 +20,7 @@ Personal apps for one user (owner GitHub login `agouz`). Static single-file PWAs
 ## Apps
 
 ### Hub (`/index.html`)
-Login page and launcher. Tengwar "one app to rule them all" (SVG outlines), original bat emblem, big buttons. The buttons come from the `cave_links` table (`parent_id`, `label`, `subtitle`, `icon`, `url`, `sort_order`). A row with no `url` opens its children as a sub-screen. Current structure: Trips (child: Americas Trip), Sticker Albums, Others (child: Training). Add an app by inserting a row, and add an icon to the `ICONS` map in the hub if it needs a new one. The hub is built from a template with the anon key and the Tengwar path injected, so edit the built file carefully.
+Login page and launcher. Tengwar "one app to rule them all" (SVG outlines), original bat emblem, big buttons. The buttons come from the `cave_links` table (`parent_id`, `label`, `subtitle`, `icon`, `url`, `sort_order`). A row with no `url` opens its children as a sub-screen. Current structure: Trips (child: Americas Trip), Sticker Albums, Others (children: Training, Watch List). Add an app by inserting a row, and add an icon to the `ICONS` map in the hub if it needs a new one. The hub is built from a template with the anon key and the Tengwar path injected, so edit the built file carefully.
 
 ### Trips (`/trips/`)
 Americas trip dashboard: itinerary legs with a map, bookings, flight details, packing list, prep tasks, health, visas and other notes, and lessons. Tables: `trip_legs`, `trip_bookings`, `trip_flight_details`, `trip_packing_items`, `trip_prep_tasks`, `trip_info` (health, visas and other pages), `trip_lessons`. Country background images and offline map data are bundled in the folder.
@@ -30,6 +30,9 @@ Panini sticker album tracker with several albums (FIFA World Cup 2026, Batman 80
 
 ### Training (`/training/`)
 Full body machine session guide: warm-up plus exercise groups with form cues, diagrams and video links. Tapping an exercise opens a sheet to log weight (kg) and reps. Each save inserts a new row, never overwriting. The sheet shows a weight chart, history grouped by day with sets, a PB badge, and two-tap delete. Table: `training_log` (`exercise_key` is a slug of the exercise name, `weight_kg`, `reps`, `logged_on` in Sydney time). Renaming an exercise detaches its history.
+
+### Watch List (`/watchlist/`)
+To-do list of movies and TV shows to watch. Type in the search box for autocomplete suggestions, tap one for details, then add it to the list. Drag the handle to reorder, tap × twice to remove. Table: `watchlist` (`tmdb_id`, `media_type`, `title`, `year`, `poster_path`, `overview`, `rating`, `position`). Search and details come from TMDB through the owner-only Supabase Edge Function `tmdb`, which keeps the TMDB key in the `TMDB_API_KEY` secret, so the key never appears in the page. Uses SortableJS (cdnjs, pinned) for dragging. TMDB attribution must stay in the footer.
 
 ## Working here
 - Test headless (Playwright) with a seeded session and stubbed `/auth/v1/user` and `/rest/v1/*`.
