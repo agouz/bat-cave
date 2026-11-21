@@ -73,6 +73,15 @@ ul.list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .act{min-height:56px;border:none;border-radius:14px;background:linear-gradient(180deg,#E8B753,#C9922F);color:#16110A;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 .act:disabled{opacity:.45;cursor:not-allowed}
 .act.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.ok{min-width:48px;min-height:48px;border:none;background:none;color:var(--gold);font-size:22px;cursor:pointer;border-radius:10px;flex:none}
+.nt{font-size:14px;color:var(--gold);font-style:italic;margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.whead{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;margin-top:22px;border:none;background:none;color:var(--dim);font-family:var(--display);letter-spacing:.2em;text-transform:uppercase;font-size:13px;cursor:pointer;padding:0 2px}
+.it.done .ti,.it.done .thumb{opacity:.55}.it.done{min-height:72px;padding-left:10px}
+.pv{font-size:14px;line-height:1.6}.pv b{font-family:var(--display);letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:var(--dim);font-weight:700;margin-right:6px}
+.pv .none{color:var(--dim)}
+.ntin{width:100%;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:500 16px var(--body);padding:0 14px}
+.ntin::placeholder{color:var(--dim)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.sbg,.card{animation:none}}
 </style>
@@ -89,10 +98,12 @@ ul.list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
     <div id="count" class="count"></div>
     <ul id="list" class="list"></ul>
     <div id="empty" class="empty" hidden>Nothing here yet. Search above to add your first one.</div>
+    <button id="wtoggle" class="whead" type="button" aria-expanded="false" hidden><span id="wlabel"></span><span id="wchev">+</span></button>
+    <ul id="wlist" class="list" style="margin-top:6px" hidden></ul>
     <div id="msg" class="msg" role="status" aria-live="polite"></div>
   </div>
   <a class="back" href="../"><span>&#8592;</span> Back</a>
-  <div class="attr">This product uses the TMDB API but is not endorsed or certified by TMDB.</div>
+  <div class="attr">This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming data is provided by JustWatch.</div>
 </div>
 
 <div id="sheet" class="sheet" hidden>
@@ -103,8 +114,10 @@ ul.list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
     <div class="tag" id="dtag"></div>
     <div class="ov" id="dov"></div>
     <div class="cast" id="dcast"></div>
+    <div class="pv" id="dpv"></div>
+    <input id="dnote" class="ntin" type="text" maxlength="200" placeholder="Who suggested it? (optional)" aria-label="Who suggested it" autocomplete="off">
     <div class="msg" id="dmsg" role="status" aria-live="polite"></div>
-    <button class="act" id="dact"></button>
+    <div class="row2" id="dbtns"><button class="act" id="dact"></button><button class="act ghost" id="dact2" hidden></button></div>
   </div>
 </div>
 
@@ -130,73 +143,102 @@ async function fn(params){
 }
 
 /* ---------- list ---------- */
+const GRIP='<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="7" cy="5" r="1.6"/><circle cx="13" cy="5" r="1.6"/><circle cx="7" cy="10" r="1.6"/><circle cx="13" cy="10" r="1.6"/><circle cx="7" cy="15" r="1.6"/><circle cx="13" cy="15" r="1.6"/></svg>';
+let wOpen=false;
+const todo=()=>items.filter(i=>!i.watched_at).sort((a,b)=>(a.position-b.position)||(a.id-b.id));
+const seen=()=>items.filter(i=>i.watched_at).sort((a,b)=>a.watched_at<b.watched_at?1:-1);
+function rowFor(it,done){
+  const li=document.createElement("li");li.className="it"+(done?" done":"");li.dataset.id=it.id;
+  if(!done){const g=document.createElement("button");g.type="button";g.className="grip";g.setAttribute("aria-label","Drag to reorder "+it.title);g.innerHTML=GRIP;li.appendChild(g);}
+  const o=document.createElement("button");o.type="button";o.className="open";
+  const th=document.createElement("div");th.className="thumb";poster(th,it.poster_path,"w154");
+  const tx=document.createElement("div");tx.style.minWidth="0";
+  const ti=document.createElement("div");ti.className="ti";ti.textContent=it.title;
+  const me=document.createElement("div");me.className="me";me.textContent=mlabel(it.media_type)+(it.year?" · "+it.year:"")+(it.rating?" · \u2605 "+it.rating:"");
+  tx.append(ti,me);
+  if(it.note){const n=document.createElement("div");n.className="nt";n.textContent="via "+it.note;tx.appendChild(n);}
+  o.append(th,tx);o.addEventListener("click",()=>openDetail({id:it.tmdb_id,media_type:it.media_type,title:it.title,year:it.year,poster_path:it.poster_path,overview:it.overview,rating:it.rating},o));
+  const ck=document.createElement("button");ck.type="button";ck.className="ok";
+  ck.textContent=done?"\u21A9":"\u2713";ck.setAttribute("aria-label",(done?"Move back to the list: ":"Mark as watched: ")+it.title);
+  ck.addEventListener("click",()=>setWatched(it.id,!done));
+  const d=document.createElement("button");d.type="button";d.className="del";d.setAttribute("aria-label","Remove "+it.title);
+  d.textContent=armed===it.id?"Remove?":"\u00D7";if(armed===it.id)d.classList.add("arm");
+  d.addEventListener("click",()=>removeItem(it.id));
+  li.append(o,ck,d);return li;
+}
 function render(){
-  const ul=$("list");ul.textContent="";
-  $("empty").hidden=items.length>0;
-  $("count").textContent=items.length?(items.length+(items.length===1?" title":" titles")+" · drag to reorder"):"";
-  items.forEach(it=>{
-    const li=document.createElement("li");li.className="it";li.dataset.id=it.id;
-    const g=document.createElement("button");g.type="button";g.className="grip";g.setAttribute("aria-label","Drag to reorder "+it.title);
-    g.innerHTML='<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="7" cy="5" r="1.6"/><circle cx="13" cy="5" r="1.6"/><circle cx="7" cy="10" r="1.6"/><circle cx="13" cy="10" r="1.6"/><circle cx="7" cy="15" r="1.6"/><circle cx="13" cy="15" r="1.6"/></svg>';
-    const o=document.createElement("button");o.type="button";o.className="open";
-    const th=document.createElement("div");th.className="thumb";poster(th,it.poster_path,"w154");
-    const tx=document.createElement("div");tx.style.minWidth="0";
-    const ti=document.createElement("div");ti.className="ti";ti.textContent=it.title;
-    const me=document.createElement("div");me.className="me";me.textContent=mlabel(it.media_type)+(it.year?" · "+it.year:"")+(it.rating?" · ★ "+it.rating:"");
-    tx.append(ti,me);o.append(th,tx);o.addEventListener("click",()=>openDetail({id:it.tmdb_id,media_type:it.media_type,title:it.title,year:it.year,poster_path:it.poster_path,overview:it.overview,rating:it.rating},o));
-    const d=document.createElement("button");d.type="button";d.className="del";d.setAttribute("aria-label","Remove "+it.title);
-    d.textContent=armed===it.id?"Remove?":"×";if(armed===it.id)d.classList.add("arm");
-    d.addEventListener("click",()=>removeItem(it.id));
-    li.append(g,o,d);ul.appendChild(li);
-  });
+  const t=todo(),w=seen();
+  const ul=$("list");ul.textContent="";t.forEach(it=>ul.appendChild(rowFor(it,false)));
+  $("empty").hidden=t.length>0;
+  $("empty").textContent=w.length?"Nothing left to watch. Search above to add something.":"Nothing here yet. Search above to add your first one.";
+  $("count").textContent=t.length?(t.length+(t.length===1?" title":" titles")+" · drag to reorder"):"";
+  const tg=$("wtoggle"),wl=$("wlist");
+  tg.hidden=!w.length;tg.setAttribute("aria-expanded",wOpen?"true":"false");
+  $("wlabel").textContent="Watched ("+w.length+")";$("wchev").textContent=wOpen?"\u2212":"+";
+  wl.hidden=!(w.length&&wOpen);wl.textContent="";if(wOpen)w.forEach(it=>wl.appendChild(rowFor(it,true)));
   if(!sortable&&window.Sortable){
     sortable=Sortable.create(ul,{handle:".grip",animation:160,delay:120,delayOnTouchOnly:true,touchStartThreshold:4,onEnd:persistOrder});
   }
 }
+$("wtoggle").addEventListener("click",()=>{wOpen=!wOpen;render();});
 async function load(){
   const {data,error}=await sb.from("watchlist").select("*").order("position",{ascending:true}).order("id",{ascending:true});
-  if(error){setMsg("Couldn’t load the list: "+error.message,true);return;}
+  if(error){setMsg("Couldn\u2019t load the list: "+error.message,true);return;}
   items=data||[];render();
 }
 async function persistOrder(){
   const ids=[...$("list").children].map(li=>+li.dataset.id);
   const byId=new Map(items.map(i=>[i.id,i]));
   const next=ids.map(id=>byId.get(id)).filter(Boolean);
-  const changes=[];
+  const changes=[],prevPos=new Map(next.map(i=>[i.id,i.position]));
   next.forEach((it,i)=>{if(it.position!==i+1){changes.push([it.id,i+1]);}});
-  const prev=items;items=next;next.forEach((it,i)=>{it.position=i+1;});
+  next.forEach((it,i)=>{it.position=i+1;});
   if(!changes.length)return;
   const res=await Promise.all(changes.map(([id,p])=>sb.from("watchlist").update({position:p}).eq("id",id)));
   const bad=res.find(r=>r.error);
-  if(bad){setMsg("Couldn’t save the new order: "+bad.error.message,true);items=prev;await load();}
+  if(bad){setMsg("Couldn\u2019t save the new order: "+bad.error.message,true);await load();}
   else setMsg("");
+}
+async function setWatched(id,w){
+  const it=items.find(i=>i.id===id);if(!it)return;
+  const patch=w?{watched_at:new Date().toISOString()}:{watched_at:null,position:items.reduce((m,i)=>Math.max(m,i.position||0),0)+1};
+  const {data,error}=await sb.from("watchlist").update(patch).eq("id",id).select("*").single();
+  if(error){setMsg("Couldn\u2019t update it: "+error.message,true);return;}
+  Object.assign(it,data);render();setMsg(w?"Moved to Watched.":"Back on your list.");
 }
 async function removeItem(id){
   if(armed!==id){armed=id;clearTimeout(armT);armT=setTimeout(()=>{armed=null;render();},3000);render();return;}
   clearTimeout(armT);armed=null;
   const {error}=await sb.from("watchlist").delete().eq("id",id);
-  if(error){setMsg("Couldn’t remove it: "+error.message,true);render();return;}
-  items=items.filter(i=>i.id!==id);items.forEach((it,i)=>it.position=i+1);render();setMsg("Removed.");
+  if(error){setMsg("Couldn\u2019t remove it: "+error.message,true);render();return;}
+  items=items.filter(i=>i.id!==id);todo().forEach((it,i)=>it.position=i+1);render();setMsg("Removed.");
 }
-async function addItem(d){
+async function addItem(d,noteText){
   const max=items.reduce((m,i)=>Math.max(m,i.position||0),0);
-  const row={tmdb_id:d.id,media_type:d.media_type,title:d.title,year:d.year||null,poster_path:d.poster_path||null,overview:d.overview||null,rating:d.rating||null,position:max+1};
+  const row={tmdb_id:d.id,media_type:d.media_type,title:d.title,year:d.year||null,poster_path:d.poster_path||null,overview:d.overview||null,rating:d.rating||null,position:max+1,note:noteText||null};
   const {data,error}=await sb.from("watchlist").insert(row).select("*").single();
   if(error)throw error;
   items.push(data);render();return data;
 }
+async function saveNote(it,text){
+  const v=(text||"").trim().slice(0,200)||null;
+  if((it.note||null)===v)return true;
+  const {error}=await sb.from("watchlist").update({note:v}).eq("id",it.id);
+  if(error){$("dmsg").textContent="Couldn\u2019t save the note: "+error.message;$("dmsg").classList.add("err");return false;}
+  it.note=v;render();return true;
+}
 
 /* ---------- search ---------- */
 function showSug(nodes){const s=$("sug");s.textContent="";nodes.forEach(n=>s.appendChild(n));s.hidden=!nodes.length;}
-function note(t){const d=document.createElement("div");d.className="note";d.textContent=t;return d;}
+function nnote(t){const d=document.createElement("div");d.className="note";d.textContent=t;return d;}
 async function search(q){
   const tok=++qTok;
   if(q.length<2){showSug([]);return;}
-  showSug([note("Searching…")]);
+  showSug([nnote("Searching…")]);
   try{
     const r=await fn({q});
     if(tok!==qTok)return;
-    if(!r.results.length){showSug([note("No matches.")]);return;}
+    if(!r.results.length){showSug([nnote("No matches.")]);return;}
     showSug(r.results.map(x=>{
       const b=document.createElement("button");b.type="button";b.setAttribute("role","option");
       const th=document.createElement("div");th.className="thumb";poster(th,x.poster_path,"w92");
@@ -207,7 +249,7 @@ async function search(q){
       b.addEventListener("click",()=>{showSug([]);openDetail(x,$("q"));});
       return b;
     }));
-  }catch(e){if(tok!==qTok)return;showSug([note(/TMDB_API_KEY/.test(e.message)?"Search isn’t set up yet: the TMDB key is missing.":e.message)]);}
+  }catch(e){if(tok!==qTok)return;showSug([nnote(/TMDB_API_KEY/.test(e.message)?"Search isn’t set up yet: the TMDB key is missing.":e.message)]);}
 }
 $("q").addEventListener("input",e=>{clearTimeout(qTimer);const v=e.target.value.trim();qTimer=setTimeout(()=>search(v),250);});
 $("q").addEventListener("keydown",e=>{if(e.key==="Escape"){showSug([]);}});
@@ -215,30 +257,53 @@ document.addEventListener("click",e=>{if(!e.target.closest(".sbox"))showSug([]);
 
 /* ---------- detail ---------- */
 function onList(d){return items.find(i=>i.media_type===d.media_type&&i.tmdb_id===d.id);}
+function pvLine(label,arr){
+  const d=document.createElement("div");const b=document.createElement("b");b.textContent=label;d.appendChild(b);d.append(arr.join(", "));return d;
+}
+function fillProviders(d){
+  const el=$("dpv");el.textContent="";
+  if(!d.providers){return;}
+  const p=d.providers,any=(p.stream&&p.stream.length)||(p.rent&&p.rent.length)||(p.buy&&p.buy.length);
+  if(!any){const n=document.createElement("div");n.className="none";n.textContent="Not listed on any Australian service yet.";el.appendChild(n);return;}
+  if(p.stream&&p.stream.length)el.appendChild(pvLine("Stream",p.stream));
+  if(p.rent&&p.rent.length)el.appendChild(pvLine("Rent",p.rent));
+  if(p.buy&&p.buy.length)el.appendChild(pvLine("Buy",p.buy));
+}
 function fillDetail(d,full){
   $("dt").textContent=d.title;poster($("dp"),d.poster_path,"w342");
   const bits=[mlabel(d.media_type)];if(d.year)bits.push(d.year);
   if(d.runtime)bits.push(d.runtime+" min");if(d.seasons)bits.push(d.seasons+(d.seasons===1?" season":" seasons"));
-  if(d.rating)bits.push("★ "+d.rating);
-  const dm=$("dm");dm.textContent=bits.join(" · ");
+  if(d.rating)bits.push("\u2605 "+d.rating);
+  const dm=$("dm");dm.textContent=bits.join(" \u00B7 ");
   if(d.genres&&d.genres.length){dm.appendChild(document.createElement("br"));dm.append(d.genres.join(", "));}
   $("dtag").textContent=d.tagline||"";
-  $("dov").textContent=d.overview||(full?"No description available.":"Loading…");
+  $("dov").textContent=d.overview||(full?"No description available.":"Loading\u2026");
   $("dcast").textContent=d.cast&&d.cast.length?"Cast: "+d.cast.join(", "):"";
+  fillProviders(d);
 }
+function dmsg(t,err){const m=$("dmsg");m.textContent=t||"";m.classList.toggle("err",!!err);}
 function setAction(d){
-  const b=$("dact"),ex=onList(d);b.onclick=null;
-  if(ex){b.textContent="On your list ✓";b.disabled=true;b.classList.add("ghost");return;}
-  b.classList.remove("ghost");b.disabled=false;b.textContent="Add to my list";
-  b.onclick=async()=>{
-    b.disabled=true;$("dmsg").textContent="Adding…";$("dmsg").classList.remove("err");
-    try{await addItem(cur);$("dmsg").textContent="Added to the bottom of your list.";setAction(cur);setMsg("");$("q").value="";}
-    catch(e){b.disabled=false;$("dmsg").textContent=(e.code==="23505")?"Already on your list.":"Couldn’t add it: "+e.message;$("dmsg").classList.add("err");}
-  };
+  const a=$("dact"),b=$("dact2"),ex=onList(d);
+  a.onclick=null;b.onclick=null;b.hidden=true;
+  $("dnote").value=ex?(ex.note||""):$("dnote").value;
+  if(!ex){
+    a.classList.remove("ghost");a.disabled=false;a.textContent="Add to my list";
+    a.onclick=async()=>{
+      a.disabled=true;dmsg("Adding\u2026");
+      try{await addItem(cur,$("dnote").value.trim().slice(0,200));dmsg("Added to the bottom of your list.");setAction(cur);setMsg("");$("q").value="";}
+      catch(e){a.disabled=false;dmsg((e.code==="23505")?"Already on your list.":"Couldn\u2019t add it: "+e.message,true);}
+    };
+    return;
+  }
+  const watched=!!ex.watched_at;
+  a.disabled=false;a.classList.toggle("ghost",watched);a.textContent=watched?"Move back to list":"Mark as watched";
+  a.onclick=async()=>{await saveNote(ex,$("dnote").value);await setWatched(ex.id,!watched);closeDetail();};
+  b.hidden=false;b.textContent="Save note";
+  b.onclick=async()=>{b.disabled=true;if(await saveNote(ex,$("dnote").value))dmsg("Saved.");b.disabled=false;};
 }
 async function openDetail(d,from){
   opener=from||null;cur=Object.assign({},d);const tok=++dTok;
-  fillDetail(cur,false);setAction(cur);$("dmsg").textContent="";$("dmsg").classList.remove("err");
+  $("dnote").value="";fillDetail(cur,false);setAction(cur);dmsg("");
   $("sheet").hidden=false;document.documentElement.style.overflow="hidden";$("sx").focus();
   try{
     const full=await fn({type:d.media_type,id:String(d.id)});
