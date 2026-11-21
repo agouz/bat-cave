@@ -298,8 +298,15 @@ function setAction(d){
   const watched=!!ex.watched_at;
   a.disabled=false;a.classList.toggle("ghost",watched);a.textContent=watched?"Move back to list":"Mark as watched";
   a.onclick=async()=>{await saveNote(ex,$("dnote").value);await setWatched(ex.id,!watched);closeDetail();};
-  b.hidden=false;b.textContent="Save note";
-  b.onclick=async()=>{b.disabled=true;if(await saveNote(ex,$("dnote").value))dmsg("Saved.");b.disabled=false;};
+  b.hidden=false;b.disabled=false;b.textContent="Save note";
+  b.onclick=async()=>{
+    const same=(ex.note||"")===$("dnote").value.trim().slice(0,200);
+    b.disabled=true;b.textContent="Saving\u2026";dmsg("");
+    const ok=await saveNote(ex,$("dnote").value);
+    b.textContent=ok?(same?"No changes":"Saved \u2713"):"Try again";
+    if(ok)dmsg(same?"":"Note saved.");
+    setTimeout(()=>{b.disabled=false;b.textContent="Save note";},1600);
+  };
 }
 async function openDetail(d,from){
   opener=from||null;cur=Object.assign({},d);const tok=++dTok;
